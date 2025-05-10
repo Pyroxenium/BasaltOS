@@ -1,0 +1,14 @@
+{
+    "id": "finder",
+    "name": "Finder",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "File management application",
+    
+    "windows": {
+        "width": 30,
+        "height": 15,
+        "resizable": true,
+        "title": "Finder"
+    }
+}
