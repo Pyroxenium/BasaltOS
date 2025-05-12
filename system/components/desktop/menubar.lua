@@ -10,7 +10,7 @@ function menubar.create(desktop)
     menubar:setBackground(colors.gray)
 
     local logo = menubar:addLabel()
-        logo:setText("BasaltOS")
+        logo:setText("")
         logo:setPosition(1, 1)
         logo:setSize(8, 1)
 
@@ -18,8 +18,8 @@ function menubar.create(desktop)
     local canvas = logo:getCanvas()
     canvas:addCommand(function(self)
         -- should be
-        --self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
-        self:blit(1, 1, "BasaltOS", "77777777", "e145d9bb")
+        
+        self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
     end)
 
 
