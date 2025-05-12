@@ -16,8 +16,8 @@ function app.new(process, desktop)
     self.desktop = desktop
 
     self.appFrame = desktop.get():addFrame()
-    self.appFrame:setPosition(1, 1)
-    self.appFrame:setSize(self.manifest.windows.width, self.manifest.windows.height)
+    self.appFrame:setPosition(2, 3)
+    self.appFrame:setSize(self.manifest.windows.width, self.manifest.windows.height - 2)
     self.appFrame:setBackground(colors.black)
     self.appFrame:setForeground(colors.white)
     self.appFrame:setDraggable(true)
