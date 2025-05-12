@@ -7,13 +7,23 @@ function menubar.create(desktop)
     menubar:setPosition(1, 1)
     menubar:setSize("{parent.width}", 1)
     menubar:setBackground(colors.gray)
-    menubar:setForeground(colors.white)
+
+    local logo = menubar:addLabel()
+        logo:setText("BasaltOS")
+        logo:setPosition(1, 1)
+        logo:setSize(8, 1)
+        logo:setForeground(colors.lightBlue)
+        logo:setBackground(colors.gray)
 
     local date = desktop.get():addLabel():setVisible(false)
-    date:setBackground(colors.gray)
     date:setPosition("{parent.width - #self.text}", 2)
+    date:setForeground(colors.lightBlue)
+    date:setBackground(colors.gray)
+
     local clock = menubar:addLabel()
     clock:setPosition("{parent.width - #self.text}", 1)
+    clock:setForeground(colors.lightBlue)
+
     clock:onClick(function()
         basalt.schedule(function()
             if(date:getVisible()) then
@@ -36,14 +46,14 @@ function menubar.create(desktop)
     end)
 
     local finderFrame
-    menubar:addLabel():setText("Finder"):setPosition(2, 1):onClick(function()
+    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground("white"):onClick(function()
         if not finderFrame then
             desktop.openApp("finder")
         end
     end)
 
     local editFrame
-    menubar:addLabel():setText("Edit"):setPosition(12, 1):onClick(function()
+    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground("white"):onClick(function()
         -- Open edit menu
     end)
 
