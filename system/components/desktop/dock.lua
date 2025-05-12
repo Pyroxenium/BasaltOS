@@ -1,3 +1,4 @@
+local utils = require ("libraries/public/utils")
 local dock = {apps={}}
 local defaultIcon = {
     {
@@ -72,6 +73,15 @@ function dockApp.newApp(data, manifest)
 end
 
 function dock.create(desktop)
+    local wallpaperPath = "media/bimg/wallpaper/basalty.bimg"
+    local wallpaperImg = utils.loadBimg(wallpaperPath)
+    desktop.wallPaper = desktop.get():addImage()
+        :setSize(desktop.get():getSize())
+        :setPosition(1,2)
+        :setBackground(colors.lightBlue)
+        :setBimg(wallpaperImg)
+
+
     dock.desktop = desktop
     dock.frame = desktop.get():addFrame()
     dock.frame:setPosition(3, "{parent.height-2}")
@@ -82,6 +92,9 @@ function dock.create(desktop)
     :setSize("{parent.width}", 2)
     :setBackground(colors.gray)
     :setPosition(1, 2)
+
+
+
 
     return dock
 end
