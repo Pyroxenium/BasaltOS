@@ -14,23 +14,25 @@ function menubar.create(desktop)
         logo:setPosition(1, 1)
         logo:setSize(8, 1)
 
-    -- FG param being ignored
     local canvas = logo:getCanvas()
     canvas:addCommand(function(self)
-        -- should be
-        
         self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
     end)
 
+    local settingsToggleButton = menubar:addLabel()
+        settingsToggleButton:setText("^")
+        settingsToggleButton:setForeground(colors.cyan)
+        settingsToggleButton:setPosition(desktop.get():getWidth(), 1)
+        settingsToggleButton:setSize(1, 1)
 
     local date = desktop.get():addLabel():setVisible(false)
-    date:setPosition("{parent.width - #self.text}", 2)
+    date:setPosition("{parent.width - #self.text - 1}", 2)
     date:setForeground(colors.lightBlue)
     date:setBackground(colors.gray)
     date:setZ(10)
 
     local clock = menubar:addLabel()
-    clock:setPosition("{parent.width - #self.text}", 1)
+    clock:setPosition("{parent.width - #self.text - 1}", 1)
     clock:setForeground(colors.lightBlue)
 
     clock:onClick(function()
@@ -47,8 +49,6 @@ function menubar.create(desktop)
     end)
 
     menubar:setX(1 - desktop.get():getWidth()):setVisible(true)
-
-
     menubar:animate()
         :move(1 - desktop.get():getWidth(), 1, 0.6)
         :sequence()
