@@ -75,11 +75,16 @@ end
 function dock.create(desktop)
     local wallpaperPath = "media/bimg/wallpaper/basalty.bimg"
     local wallpaperImg = utils.loadBimg(wallpaperPath)
-    desktop.wallPaper = desktop.get():addImage()
+    local wallPaper = desktop.get():addImage()
         :setSize(desktop.get():getSize())
-        :setPosition(1,2)
-        :setBackground(colors.lightBlue)
+        :setPosition(1,1)
         :setBimg(wallpaperImg)
+        :setPosition(1, 2 - desktop.get():getHeight())
+
+    local wallPaperAnim = wallPaper:animate()
+        :move(1,1, 0.75)
+        :sequence()
+        :start()
 
 
     dock.desktop = desktop

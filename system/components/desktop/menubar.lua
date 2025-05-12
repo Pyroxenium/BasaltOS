@@ -3,7 +3,7 @@ local basalt = require("libraries/private/basalt")
 local menubar = {}
 
 function menubar.create(desktop)
-    local menubar = desktop.get():addFrame()
+    local menubar = desktop.get():addFrame():setVisible(false)
     menubar:setPosition(1, 1)
     menubar:setSize("{parent.width}", 1)
     menubar:setForeground(colors.white)
@@ -45,6 +45,18 @@ function menubar.create(desktop)
             date:setVisible(false)
         end)
     end)
+
+    menubar:setX(1 - desktop.get():getWidth()):setVisible(true)
+
+
+    menubar:animate()
+        :move(1 - desktop.get():getWidth(), 1, 1)
+        :sequence()
+        :move(1, 1, 1)
+        :sequence()
+        :start()
+
+
 
     basalt.schedule(function()
         while true do
