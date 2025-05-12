@@ -6,14 +6,22 @@ function menubar.create(desktop)
     local menubar = desktop.get():addFrame()
     menubar:setPosition(1, 1)
     menubar:setSize("{parent.width}", 1)
+        menubar:setForeground(colors.white)
     menubar:setBackground(colors.gray)
 
     local logo = menubar:addLabel()
         logo:setText("BasaltOS")
         logo:setPosition(1, 1)
         logo:setSize(8, 1)
-        logo:setForeground(colors.lightBlue)
-        logo:setBackground(colors.gray)
+
+    -- FG param being ignored
+    local canvas = logo:getCanvas()
+    canvas:addCommand(function(self)
+        -- should be
+        --self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
+        self:blit(1, 1, "BasaltOS", "77777777", "e145d9bb")
+    end)
+
 
     local date = desktop.get():addLabel():setVisible(false)
     date:setPosition("{parent.width - #self.text}", 2)
