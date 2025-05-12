@@ -6,7 +6,7 @@ function menubar.create(desktop)
     local menubar = desktop.get():addFrame()
     menubar:setPosition(1, 1)
     menubar:setSize("{parent.width}", 1)
-        menubar:setForeground(colors.white)
+    menubar:setForeground(colors.white)
     menubar:setBackground(colors.gray)
 
     local logo = menubar:addLabel()
