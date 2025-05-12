@@ -50,7 +50,7 @@ function menubar.create(desktop)
 
 
     menubar:animate()
-        :move(1 - desktop.get():getWidth(), 1, 1)
+        :move(1 - desktop.get():getWidth(), 1, 0.6)
         :sequence()
         :move(1, 1, 1)
         :sequence()
