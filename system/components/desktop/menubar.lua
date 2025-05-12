@@ -30,7 +30,7 @@ function menubar.create(desktop)
     date:setPosition("{parent.width - #self.text - 1}", 2)
     date:setForeground(colors.lightBlue)
     date:setBackground(colors.gray)
-    date:setZ(10)
+    date:setZ(110)
 
     local clock = menubar:addLabel()
     clock:setPosition("{parent.width - #self.text - 1}", 1)
