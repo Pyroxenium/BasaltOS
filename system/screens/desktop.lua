@@ -11,7 +11,7 @@ local components = {}
 function desktop.create(core)
     desktop.core = core
     screen = basalt.createFrame()
-    screen:setBackground(colors.lightGray)
+    screen:setBackground(colors.gray)
 
     components.dock = dockComponent.create(desktop)
     components.menubar = menubarComponent.create(desktop)

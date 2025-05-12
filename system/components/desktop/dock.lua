@@ -82,7 +82,7 @@ function dock.create(desktop)
         :setPosition(1, 1 - desktop.get():getHeight())
 
     local wallPaperAnim = wallPaper:animate()
-        :move(1,1, 0.75)
+        :move(1,2, 0.75)
         :sequence()
         :start()
     

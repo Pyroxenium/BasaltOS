@@ -56,8 +56,6 @@ function menubar.create(desktop)
         :sequence()
         :start()
 
-
-
     basalt.schedule(function()
         while true do
             local time = os.date("%H:%M")
@@ -67,14 +65,14 @@ function menubar.create(desktop)
     end)
 
     local finderFrame
-    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground("lightGray"):onClick(function()
+    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground(colors.white):onClick(function()
         if not finderFrame then
             desktop.openApp("finder")
         end
     end)
 
     local editFrame
-    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground("white"):setVisible(false):onClick(function()
+    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground(colors.white):setVisible(false):onClick(function()
         -- Open edit menu
     end)
 
