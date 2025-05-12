@@ -61,7 +61,7 @@ function menubar.create(desktop)
     end)
 
     local editFrame
-    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground("white"):onClick(function()
+    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground("white"):setVisible(false):onClick(function()
         -- Open edit menu
     end)
 
