@@ -27,6 +27,7 @@ function menubar.create(desktop)
     date:setPosition("{parent.width - #self.text}", 2)
     date:setForeground(colors.lightBlue)
     date:setBackground(colors.gray)
+    date:setZ(10)
 
     local clock = menubar:addLabel()
     clock:setPosition("{parent.width - #self.text}", 1)
@@ -54,7 +55,7 @@ function menubar.create(desktop)
     end)
 
     local finderFrame
-    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground("white"):onClick(function()
+    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground("lightGray"):onClick(function()
         if not finderFrame then
             desktop.openApp("finder")
         end
