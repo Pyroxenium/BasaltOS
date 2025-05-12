@@ -19,11 +19,11 @@ function menubar.create(desktop)
         self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
     end)
 
-    local settingsToggleButton = menubar:addLabel()
-        settingsToggleButton:setText("^")
-        settingsToggleButton:setForeground(colors.cyan)
-        settingsToggleButton:setPosition(desktop.get():getWidth(), 1)
-        settingsToggleButton:setSize(1, 1)
+    local settingsToggleIndicator = menubar:addLabel()
+        settingsToggleIndicator:setText("^")
+        settingsToggleIndicator:setForeground(colors.cyan)
+        settingsToggleIndicator:setPosition(desktop.get():getWidth(), 1)
+        settingsToggleIndicator:setSize(1, 1)
 
     local date = desktop.get():addLabel():setVisible(false)
     date:setPosition("{parent.width - #self.text - 1}", 2)
@@ -55,6 +55,23 @@ function menubar.create(desktop)
         :move(1, 1, 1)
         :sequence()
         :start()
+
+    menubar:onClick(function()
+            if menubar:getHeight() > 1 then
+                menubar:animate()
+                    :resize(desktop.get():getWidth(), 1, 0.45)
+                    :start()
+
+                settingsToggleIndicator:setText("^")
+            else
+                menubar:animate()
+                    :resize(desktop.get():getWidth(), 10, 0.6)
+                    :start()
+
+                settingsToggleIndicator:setText("V")
+            end
+
+    end)
 
     basalt.schedule(function()
         while true do
