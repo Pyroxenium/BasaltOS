@@ -6,8 +6,8 @@
     "description": "File management application",
     
     "windows": {
-        "width": 30,
-        "height": 15,
+        "width": 24,
+        "height": 16,
         "resizable": true,
         "title": "Finder"
     }

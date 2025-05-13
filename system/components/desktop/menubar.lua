@@ -5,32 +5,35 @@ local menubar = {}
 function menubar.create(desktop)
     local menubar = desktop.get():addFrame():setVisible(false)
     menubar:setPosition(1, 1)
+    menubar:setZ(100)
     menubar:setSize("{parent.width}", 1)
     menubar:setForeground(colors.white)
     menubar:setBackground(colors.gray)
 
     local logo = menubar:addLabel()
-        logo:setText("BasaltOS")
+        logo:setText("")
         logo:setPosition(1, 1)
         logo:setSize(8, 1)
 
-    -- FG param being ignored
     local canvas = logo:getCanvas()
     canvas:addCommand(function(self)
-        -- should be
-        --self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
-        self:blit(1, 1, "BasaltOS", "77777777", "e145d9bb")
+        self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
     end)
 
+    local settingsToggleIndicator = menubar:addLabel()
+        settingsToggleIndicator:setText("^")
+        settingsToggleIndicator:setForeground(colors.cyan)
+        settingsToggleIndicator:setPosition(desktop.get():getWidth(), 1)
+        settingsToggleIndicator:setSize(1, 1)
 
     local date = desktop.get():addLabel():setVisible(false)
-    date:setPosition("{parent.width - #self.text}", 2)
+    date:setPosition("{parent.width - #self.text - 1}", 2)
     date:setForeground(colors.lightBlue)
     date:setBackground(colors.gray)
-    date:setZ(10)
+    date:setZ(110)
 
     local clock = menubar:addLabel()
-    clock:setPosition("{parent.width - #self.text}", 1)
+    clock:setPosition("{parent.width - #self.text - 1}", 1)
     clock:setForeground(colors.lightBlue)
 
     clock:onClick(function()
@@ -47,8 +50,6 @@ function menubar.create(desktop)
     end)
 
     menubar:setX(1 - desktop.get():getWidth()):setVisible(true)
-
-
     menubar:animate()
         :move(1 - desktop.get():getWidth(), 1, 0.6)
         :sequence()
@@ -56,7 +57,22 @@ function menubar.create(desktop)
         :sequence()
         :start()
 
+    menubar:onClick(function()
+            if menubar:getHeight() > 1 then
+                menubar:animate()
+                    :resize(desktop.get():getWidth(), 1, 0.45)
+                    :start()
 
+                settingsToggleIndicator:setText("^")
+            else
+                menubar:animate()
+                    :resize(desktop.get():getWidth(), 10, 0.6)
+                    :start()
+
+                settingsToggleIndicator:setText("V")
+            end
+
+    end)
 
     basalt.schedule(function()
         while true do
@@ -67,14 +83,14 @@ function menubar.create(desktop)
     end)
 
     local finderFrame
-    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground("lightGray"):onClick(function()
+    menubar:addLabel():setText("Finder"):setPosition(11, 1):setForeground(colors.white):onClick(function()
         if not finderFrame then
             desktop.openApp("finder")
         end
     end)
 
     local editFrame
-    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground("white"):setVisible(false):onClick(function()
+    menubar:addLabel():setText("Edit"):setPosition(19, 1):setForeground(colors.white):setVisible(false):onClick(function()
         -- Open edit menu
     end)
 

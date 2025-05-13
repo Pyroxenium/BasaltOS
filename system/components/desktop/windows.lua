@@ -41,11 +41,11 @@ function app.new(process, desktop)
     self.appFrame:addLabel():setText("\7"):setForeground(colors.green):setPosition(3, 1):onClick(function()
 
     end)
-
     self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
     :setBackground(colors.blue)
-    self.title = self.appFrame:addLabel():setText(self.manifest.windows.title):setPosition("{parent.width / 2 - #self.text/2}", 1)
+
+    self.title = self.appFrame:addLabel():setText(self.manifest.windows.title):setPosition("{parent.width / 2 - #self.text/2}", 1):setForeground(colors.white)
 
     self.program = self.appFrame:addProgram()
     self.program:setPosition(1, 2)
