@@ -1,8 +1,10 @@
-
+local args = {...}
 local store = {
     data = {},
-    cache = {}
+    cache = {},
+    basePath = "system"
 }
+store.basePath = fs.getDir(args[2]) or store.basePath
 
 function store.set(category, key, value)
     if not store.data[category] then
@@ -25,31 +27,10 @@ function store.save(category)
         end
         return
     end
-    local path = "system/data/"..category..".json"
+    local path = fs.combine(store.basePath, "data", category..".json")
     local file = fs.open(path, "w")
     file.write(textutils.serializeJSON(store.data[category]))
     file.close()
-end
-
-function store.load()
-    if not fs.exists("system/data") then
-        fs.makeDir("system/data")
-        return
-    end
-
-    local files = fs.list("system/data")
-    for _, file in ipairs(files) do
-        local category = file:match("(.+)%.json$")
-        if category then
-            local path = "system/data/"..file
-            local handle = fs.open(path, "r")
-            if handle then
-                local content = handle.readAll()
-                handle.close()
-                store.data[category] = textutils.unserializeJSON(content) or {}
-            end
-        end
-    end
 end
 
 function store.getCategory(category)
@@ -76,6 +57,25 @@ function store.clearCache(category)
         store.cache[category] = {}
     else
         store.cache = {}
+    end
+end
+
+if not fs.combine(store.basePath, "data") then
+    fs.combine(store.basePath, "data")
+    return
+end
+
+local files = fs.list(fs.combine(store.basePath, "data"))
+for _, file in ipairs(files) do
+    local category = file:match("(.+)%.json$")
+    if category then
+        local path = fs.combine(store.basePath, "data", file)
+        local handle = fs.open(path, "r")
+        if handle then
+            local content = handle.readAll()
+            handle.close()
+            store.data[category] = textutils.unserializeJSON(content) or {}
+        end
     end
 end
 

@@ -1,0 +1,13 @@
+{
+    "name": "Worm",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "Worm",
+    "executable": "rom/programs/fun/worm.lua",
+    "windows": {
+        "width": 30,
+        "height": 15,
+        "resizable": true,
+        "title": "Worm"
+    }
+}

@@ -1,18 +1,19 @@
-local basalt = require("libraries/private/basalt")
+local basalt = require("libraries.private.basalt")
 
 local menubar = {}
+menubar.__index = menubar
 
-function menubar.create(desktop)
-    local menubar = desktop.get():addFrame()
-    menubar:setPosition(1, 1)
-    menubar:setSize("{parent.width}", 1)
-    menubar:setBackground(colors.gray)
-    menubar:setForeground(colors.white)
+-- Needs a rework, make clock a global element
+function menubar.new(desktop)
+    local self = setmetatable({}, menubar)
+    self.menubar = desktop.frame:addFrame({z=100, width="{parent.width}", height=1})
+    self.menubar:setBackground(colors.gray)
+    self.menubar:setForeground(colors.white)
 
-    local date = desktop.get():addLabel():setVisible(false)
+    local date = desktop.frame:addLabel():setVisible(false)
     date:setBackground(colors.gray)
     date:setPosition("{parent.width - #self.text}", 2)
-    local clock = menubar:addLabel()
+    local clock = self.menubar:addLabel()
     clock:setPosition("{parent.width - #self.text}", 1)
     clock:onClick(function()
         basalt.schedule(function()
@@ -35,19 +36,16 @@ function menubar.create(desktop)
         end
     end)
 
-    local finderFrame
-    menubar:addLabel():setText("Finder"):setPosition(2, 1):onClick(function()
-        if not finderFrame then
-            desktop.openApp("finder")
-        end
+    local logo = self.menubar:addLabel({text=""}):onClick(function()
+        -- Open BasaltOS menu
     end)
 
-    local editFrame
-    menubar:addLabel():setText("Edit"):setPosition(12, 1):onClick(function()
-        -- Open edit menu
+    local canvas = logo:getCanvas()
+    canvas:addCommand(function(self)
+        self:blit(1, 1, "BasaltOS", "e145d9bb", "77777777")
     end)
 
-    return menubar
+    return self
 end
 
 return menubar

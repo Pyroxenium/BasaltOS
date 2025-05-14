@@ -1,125 +1,126 @@
-local dock = {apps={}}
-local defaultIcon = {
-    {
-      {
-        "\131\131\131",
-        "9f9",
-        "fff",
-      },
-      {
-        "\7\7 ",
-        "999",
-        "fff",
-      },
-    },
-  }
+local utils = require("libraries.public.utils")
+local path = require("libraries.public.path")
+local processManager = require("libraries.private.processManager")
 
-local dockApp = {}
-dockApp.__index = dockApp
+local icon = {}
+icon.__index = icon
 
-function dockApp.newWindow(app)
-    local self = setmetatable({}, dockApp)
-    app.dock = self
+function icon.new(app, dock)
+    local self = setmetatable({}, icon)
+    self.dock = dock
     self.app = app
-    self.process = app.process
-    self.name = app.name
-    self.path = app.path
-    self.icon = dock.frame:addImage()
-    self.icon:setBackground(colors.black)
-    self.icon:setForeground(colors.white)
-    self.icon:setSize(3, 2)
-    if app.manifest.icon then
-        self.icon:setBimg(app.manifest.icon)
+    self.bimg = utils.loadBimg(path.resolve(app.manifest.icon or "{assets}/icons/default.bimg"))
+    self.iconElement = self.dock.frame:addImage()
+        self.iconElement:setPosition(#self.dock.apps * 4 + 2, 1)
+        self.iconElement:setSize(3, 2)
+        self.iconElement:setBimg(self.bimg)
+        self.iconElement:onClick(function()
+            if not self.process then
+                self.process = self:launchApp()
+                if self.process.window then
+                    self:updateStatus("maximized")
+                end
+            else
+                if self.process.window then
+                    if self.process.window:getStatus() == "maximized" then
+                        self:updateStatus("minimized")
+                        self.process.window:minimize()
+                    else
+                        self:updateStatus("maximized")
+                        self.process.window:restore()
+                    end
+                end
+            end
+        end)
+    return self
+end
+
+function icon:launchApp()
+    local process = processManager.create(self.app)
+    if process then
+        process:setIcon(self)
+        process:run()
+        return process
     else
-        self.icon:setBimg(defaultIcon)
+        error("Failed to launch app: " .. self.manifest.name)
     end
-    self.iconCanvasId = self.icon:getCanvas()
-    :text(1, 3, "\136\140\132", colors.lightGray)
-    self.icon:onClickUp(function()
-        if self.app:getStatus() == "running" then
-            self.app:minimize()
-        else
-            self.app:restore()
+end
+
+function icon:updateStatus(status)
+    if self.iconElement then
+        local canvas = self.iconElement:getCanvas()
+        if self.canvasId then
+            canvas:removeCommand(self.canvasId)
         end
-    end)
-
-    return self
-end
-
-function dockApp.newApp(data, manifest)
-    local self = setmetatable({}, dockApp)
-    self.data = data
-    self.name = data.name
-    self.path = data.path
-    self.pinned = true
-    self.manifest = manifest or {}
-    self.icon = dock.frame:addImage()
-    self.icon:setBackground(colors.black)
-    self.icon:setForeground(colors.white)
-    self.icon:setSize(3, 2)
-    if manifest.icon then
-        self.icon:setBimg(manifest.icon)
-    else
-        self.icon:setBimg(defaultIcon)
+        if status == "maximized" then
+            self.canvasId= canvas:text(1, 3, "\136\140\132", colors.lightGray)
+        elseif status == "minimized" then
+            self.canvasId = canvas:text(2, 3, "\7", colors.lightGray)
+        end
+        self.iconElement:updateRender()
     end
-    self.icon:onClickUp(function()
-        --if not processManager.get(self.process.pid) then
-            --dock.desktop.launchApp(self.process)
-        --end
-    end)
-
-    return self
 end
 
-function dock.create(desktop)
-    dock.desktop = desktop
-    dock.frame = desktop.get():addFrame()
-    dock.frame:setPosition(3, "{parent.height-2}")
-    dock.frame:setSize("{parent.width-4}", 3)
-    dock.frame:setBackground(colors.white)
-    dock.frame:setForeground(colors.black)
-    dock.frame:addVisualElement()
+function icon:remove()
+    self:updateStatus("closed")
+    self.process = nil
+    if not self.pinned then
+        self.dock:remove(self.app)
+    end
+end
+
+function icon:setPinned(pinned)
+    self.pinned = pinned
+end
+
+local dock = {}
+dock.__index = dock
+
+-- Creates a new dock component
+function dock.new(desktop)
+    local self = setmetatable({}, dock)
+    self.apps = {}
+    self.desktop = desktop
+    self.frame = desktop.frame:addFrame()
+    self.frame:setPosition(3, "{parent.height-2}")
+    self.frame:setSize("{parent.width-4}", 3)
+    self.frame:setBackground(colors.white)
+    self.frame:setForeground(colors.black)
+    self.frame:setBackgroundEnabled(false)
+    self.frame:addVisualElement()
     :setSize("{parent.width}", 2)
     :setBackground(colors.gray)
     :setPosition(1, 2)
-
-    return dock
+    return self
 end
 
-function dock.updateDock()
-    local x = 1
-    for _, app in ipairs(dock.apps) do
-        app.icon:setPosition(x, 1)
-        x = x + 4
+function dock:getPinnedApp(app)
+    for _, pinnedApp in pairs(self.apps) do
+        if pinnedApp.app.manifest.name == app.manifest.name then
+            return pinnedApp
+        end
     end
 end
 
-function dock.addWindow(application)
-    local app = dockApp.newWindow(application)
-    table.insert(dock.apps, app)
-    dock.updateDock()
-    return app
+function dock:add(app)
+    local pinnedApp = self:getPinnedApp(app)
+    if not pinnedApp then
+        local dockIcon = icon.new(app, self)
+        table.insert(self.apps, dockIcon)
+    end
+    return pinnedApp
 end
 
-function dock.addApp(data, manifest)
-    local app = dockApp.newApp(data, manifest)
-    table.insert(dock.apps, app)
-    dock.updateDock()
-    return app
-end
-
-function dock.removeWindow(process)
-    for i, app in pairs(dock.apps) do
-        if app.process then
-            if app.process.pid == process.pid then
-                table.remove(dock.apps, i)
-                app.icon:destroy()
-                dock.updateDock()
-                return true
+function dock:remove(app)
+    local pinnedApp = self:getPinnedApp(app)
+    if pinnedApp and not pinnedApp.pinned then
+        for i, app in ipairs(self.apps) do
+            if app == pinnedApp then
+                table.remove(self.apps, i)
+                break
             end
         end
     end
-    return false
 end
 
 return dock

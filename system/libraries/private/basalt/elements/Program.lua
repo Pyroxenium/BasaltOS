@@ -28,7 +28,6 @@ local newPackage = dofile("rom/modules/main/cc/require.lua").make
 function BasaltProgram.new(program, env, addEnvironment)
     local self = setmetatable({}, BasaltProgram)
     self.env = env or {}
-    self.args = {}
     self.addEnvironment = addEnvironment == nil and true or addEnvironment
     self.program = program
     return self
@@ -43,7 +42,7 @@ end
 ---@private
 function BasaltProgram:run(path, width, height)
     self.window = window.create(self.program:getBaseFrame():getTerm(), 1, 1, width, height, false)
-    local pPath = shell.resolveProgram(path)
+    local pPath = path
     if(pPath~=nil)then
         if(fs.exists(pPath)) then
             local file = fs.open(pPath, "r")
@@ -53,6 +52,7 @@ function BasaltProgram:run(path, width, height)
             local env = setmetatable(createShellEnv(fs.getDir(path)), { __index = _ENV })
             env.term = self.window
             env.term.current = term.current
+            env.term.redirect = term.redirect
             env.term.native = function ()
                 return self.window
             end
@@ -68,7 +68,7 @@ function BasaltProgram:run(path, width, height)
             self.coroutine = coroutine.create(function()
                 local program = load(content, "@/" .. path, nil, env)
                 if program then
-                    local result = program(path, table.unpack(self.args))
+                    local result = program()
                     return result
                 end
             end)

@@ -1,69 +1,51 @@
-local basalt = require("libraries/private/basalt")
+local basalt = require("libraries.private.basalt")
 local dockComponent = require("components/desktop/dock")
 local menubarComponent = require("components/desktop/menubar")
 local windowsComponent = require("components/desktop/windows")
-local store = require("store")
+local config = require("libraries.private.configs")
 
 local desktop = {}
-local screen
-local components = {}
+desktop.__index = desktop
 
-function desktop.create(core)
-    desktop.core = core
-    screen = basalt.createFrame()
-    components.dock = dockComponent.create(desktop)
-    components.menubar = menubarComponent.create(desktop)
-    components.windows = windowsComponent.create(desktop)
+local activeDesktop
+local desktopId = 0
 
-    desktop.addAppToDock("finder")
-    return screen
+function desktop.new(id)
+    local self = setmetatable({}, desktop)
+    self.id = id
+    self.frame = basalt.createFrame()
+    self.frame:setBackground(config.get("theme", "background"))
+    self.dock = dockComponent.new(self)
+    self.menubar = menubarComponent.new(self)
+    self.windowManager = windowsComponent.new(self)
+    activeDesktop = self
+    return self
 end
 
-function desktop.addAppToDock(name)
-    if desktop.core then
-        local data = desktop.core.getApp(name)
-        local manifest = desktop.core.getAppManifest(name)
-        if data and manifest then
-            local app = dockComponent.addApp(data, manifest)
-            if app then
-                return app
-            end
-        end
+local desktopManager = {desktops={}}
+
+function desktopManager.get()
+    return activeDesktop.frame
+end
+
+function desktopManager.getActive()
+    return activeDesktop
+end
+
+function desktopManager.create()
+    local newDesktop = desktop.new(desktopId)
+    desktopManager.desktops[desktopId] = newDesktop
+    desktopId = desktopId + 1
+    return newDesktop
+end
+
+function desktopManager.switch(id)
+    if desktopManager.desktops[id] then
+        activeDesktop = desktopManager.desktops[id]
+        basalt.setActiveFrame(activeDesktop.frame)
+    else
+        error("Desktop not found: " .. id)
     end
 end
 
-function desktop.get()
-    if not screen then
-        desktop.create()
-    end
-    return screen
-end
-
-function desktop.getComponents()
-    return components
-end
-
-function desktop.getComponent(name)
-    return components[name]
-end
-
-function desktop.openApp(name)
-    return desktop.core.openApp(name)
-end
-
-function desktop.closeApp(pid)
-    pid = type(pid) == "number" and pid or tonumber(pid.pid)
-    local process = desktop.core.getProcess(pid)
-    if process then
-        desktop.core.removeProcess(pid)
-        windowsComponent.removeApp(process)
-        dockComponent.removeWindow(process)
-    end
-end
-
-function desktop.launchApp(process)
-    local window = windowsComponent.launchProcess(process)
-    dockComponent.addWindow(window)
-end
-
-return desktop
+return desktopManager

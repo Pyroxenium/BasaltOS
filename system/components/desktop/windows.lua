@@ -1,91 +1,108 @@
-local basalt = require("libraries/private/basalt")
+local configs = require("libraries.private.configs")
+local path = require("libraries.public.path")
 
-local windowManager = {apps={}}
+local windowManager = {}
+windowManager.__index = windowManager
 
-local app = {}
-app.__index = app
+local osWindow = {}
+osWindow.__index = osWindow
 
-function app.new(process, desktop)
-    local self = setmetatable({}, app)
-    local data, manifest = process.data, process.manifest
+function osWindow.new(desktop, process)
+    local self = setmetatable({}, osWindow)
     self.process = process
-    self.name = data.name
-    self.path = data.path
-    self.data = data or {}
-    self.manifest = manifest or {}
     self.desktop = desktop
-
-    self.appFrame = desktop.get():addFrame()
-    self.appFrame:setPosition(1, 1)
-    self.appFrame:setSize(self.manifest.windows.width, self.manifest.windows.height)
+    self.appFrame = desktop.frame:addFrame()
+    self.appFrame:setPosition(3, 3) -- Maybe center it later
+    self.appFrame:setSize(30, 12)
     self.appFrame:setBackground(colors.black)
     self.appFrame:setForeground(colors.white)
     self.appFrame:setDraggable(true)
 
+    self.program = self.appFrame:addProgram({y=2, width="{parent.width}", height="{parent.height-1}", background=colors.black})
+
     local dragMap = self.appFrame.get("draggingMap")
     dragMap[1] = {x=4, y=1, width="width", height=1}
 
-    self.appFrame:onFocus(function()
-        self.focus(self)
-    end)
-
     -- Close button
-    self.appFrame:addLabel():setText("\7"):setForeground(colors.red):setPosition(1, 1):onClick(function()
-        desktop.closeApp(process.pid)
+    self.appFrame:addLabel({text="\7", foreground=colors.red}):onClick(function()
+        self.process:stop()
     end)
     -- Minimize button
-    self.appFrame:addLabel():setText("\7"):setForeground(colors.yellow):setPosition(2, 1):onClick(function()
-
+    self.appFrame:addLabel({text="\7", foreground=colors.yellow, x=2}):onClick(function()
+        --self:minimize()
     end)
     -- Maximize button
-    self.appFrame:addLabel():setText("\7"):setForeground(colors.green):setPosition(3, 1):onClick(function()
+    self.appFrame:addLabel({text="\7", foreground=colors.green, x=3}):onClick(function()
 
     end)
 
-    self.appFrame:addVisualElement()
+    local titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
-    :setBackground(colors.blue)
-    self.title = self.appFrame:addLabel():setText(self.manifest.windows.title):setPosition("{parent.width / 2 - #self.text/2}", 1)
+    :setBackground(configs.get("windows", "blurColor"))
 
-    self.program = self.appFrame:addProgram()
-    self.program:setPosition(1, 2)
-    self.program:setSize("{parent.width}", "{parent.height - 1}")
+    self.appFrame:onFocus(function()
+        self.focus(self)
+        titleBar:setBackground(configs.get("windows", "focusColor"))
+        if self.title then
+            self.title:setForeground(configs.get("windows", "focusTextColor"))
+        end
+    end)
 
+    self.appFrame:onBlur(function()
+        titleBar:setBackground(configs.get("windows", "blurColor"))
+        if self.title then
+            self.title:setForeground(configs.get("windows", "blurTextColor"))
+        end
+    end)
+
+    self:setTitle("App Title")
     return self
 end
 
-function app:run()
-    if self.path then
-        windowManager.apps[self.name] = self
-        self.program:execute(self.path)
-    else
-        print("No path specified for app.")
+function osWindow:setTitle(title)
+    if not self.title then
+        self.title = self.appFrame:addLabel({x= "{parent.width / 2 - #self.text/2}", y=1})
+    end
+    self.title:setText(title)
+end
+
+function osWindow:run()
+    if self.process then
+        if self.process.app then
+            if self.process.app.manifest then
+                if self.process.app.manifest.executable then
+                    local appPath = path.resolve(self.process.app.manifest.executable)
+                    if fs.exists(appPath) then
+                        self.program:execute(appPath)
+                    end
+                end
+            end
+        end
     end
 end
 
-function app:close()
-    if self.program then
-        self.program:stop()
+function osWindow:close()
+    if self.appFrame then
         self.appFrame:destroy()
         self.appFrame = nil
     end
 end
 
-function app:restart()
+function osWindow:restart()
     if self.program then
         self.program:execute(self.path)
     end
 end
 
-function app:focus()
-    self.desktop.get():removeChild(self.appFrame)
-    self.desktop.get():addChild(self.appFrame)
+function osWindow:focus()
+    self.desktop.frame:removeChild(self.appFrame)
+    self.desktop.frame:addChild(self.appFrame)
     if self.appFrame then
         self.appFrame:setVisible(true)
     end
 end
 
-function app:minimize()
+function osWindow:minimize()
     self.appFrame:setVisible(false)
     if self.dock then
         local canvas = self.dock.icon:getCanvas()
@@ -94,7 +111,7 @@ function app:minimize()
     end
 end
 
-function app:restore()
+function osWindow:restore()
     self.appFrame:setVisible(true)
     self.appFrame:focus()
     if self.dock then
@@ -104,37 +121,20 @@ function app:restore()
     end
 end
 
-function app:getStatus()
-    return self.appFrame:getVisible() and "running" or "minimized"
+function osWindow:getStatus()
+    return self.appFrame:getVisible() and "maximized" or "minimized"
 end
 
 -- Window Manager Functions
-function windowManager.create(desktop)
-    windowManager.desktop = desktop
-    return windowManager
+function windowManager.new(desktop)
+    local self = setmetatable({}, windowManager)
+    self.desktop = desktop
+    return self
 end
 
-function windowManager.getApp(name)
-    return windowManager.apps[name]
-end
-
-function windowManager.removeApp(process)
-    local app = windowManager.apps[process.pid]
-    if app then
-        app:close()
-        windowManager.apps[process.pid] = nil
-    end
-end
-
-function windowManager.getApps()
-    return windowManager.apps
-end
-
-function windowManager.launchProcess(process)
-    local newApp = app.new(process, windowManager.desktop)
-    newApp:run()
-    windowManager.apps[process.pid] = newApp
-    return newApp
+function windowManager:createWindow(process)
+    local osWindow = osWindow.new(self.desktop, process)
+    return osWindow
 end
 
 return windowManager
