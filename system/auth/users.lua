@@ -1,3 +1,0 @@
-local users = {}
-
-return users
