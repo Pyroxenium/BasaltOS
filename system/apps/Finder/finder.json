@@ -1,0 +1,13 @@
+{
+    "name": "Finder",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "File management application",
+    "executable": "{system}/apps/Finder/finder.lua",
+    "windows": {
+        "width": 30,
+        "height": 15,
+        "resizable": true,
+        "title": "Finder"
+    }
+}

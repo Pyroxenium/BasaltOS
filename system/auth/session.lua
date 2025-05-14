@@ -1,0 +1,3 @@
+local session = {}
+
+return session
