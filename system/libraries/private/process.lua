@@ -35,6 +35,16 @@ function process:run()
     end
 end
 
+function process:minimize()
+    if self.window then
+        self.window:minimize()
+        self.status = "minimized"
+    end
+    if self.icon then
+        self.icon:updateStatus("minimized")
+    end
+end
+
 function process:stop()
     if self.running then
         self.running = false

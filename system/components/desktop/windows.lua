@@ -1,5 +1,6 @@
 local configs = require("libraries.private.configs")
 local path = require("libraries.public.path")
+local colorHex = require("libraries.public.utils").tHex
 
 local windowManager = {}
 windowManager.__index = windowManager
@@ -14,11 +15,11 @@ function osWindow.new(desktop, process)
     self.appFrame = desktop.frame:addFrame()
     self.appFrame:setPosition(3, 3) -- Maybe center it later
     self.appFrame:setSize(30, 12)
-    self.appFrame:setBackground(colors.black)
-    self.appFrame:setForeground(colors.white)
+    --self.appFrame:setBackground(colors.gray)
+    self.appFrame:setBackgroundEnabled(false)
     self.appFrame:setDraggable(true)
 
-    self.program = self.appFrame:addProgram({y=2, width="{parent.width}", height="{parent.height-1}", background=colors.black})
+    self.program = self.appFrame:addProgram({y=2, x=2, width="{parent.width-2}", height="{parent.height-2}", background=colors.black})
 
     local dragMap = self.appFrame.get("draggingMap")
     dragMap[1] = {x=4, y=1, width="width", height=1}
@@ -26,15 +27,32 @@ function osWindow.new(desktop, process)
     -- Close button
     self.appFrame:addLabel({text="\7", foreground=colors.red}):onClick(function()
         self.process:stop()
+        require("logging").debug("Window closed")
     end)
     -- Minimize button
     self.appFrame:addLabel({text="\7", foreground=colors.yellow, x=2}):onClick(function()
-        --self:minimize()
+        self.process:minimize()
+        require("logging").debug("Window minimized")
     end)
     -- Maximize button
     self.appFrame:addLabel({text="\7", foreground=colors.green, x=3}):onClick(function()
 
     end)
+
+    local frameCanvas = self.appFrame:getCanvas()
+
+    frameCanvas:addCommand(function(self) -- Border for Frame:
+        local width, height = self.get("width"), self.get("height")
+        local bg = self.get("background")
+        local borderColor = self.focused and configs.get("windows", "focusColor") or configs.get("windows", "blurColor")
+
+        self:textFg(1, height, ("\131"):rep(width), borderColor)
+        for i = 1, height-1 do
+            self:blit(1, i, ("\149"), colorHex[borderColor], colorHex[bg])
+            self:blit(width, i, ("\149"), colorHex[bg], colorHex[borderColor])
+        end
+    end)
+
 
     local titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
@@ -97,28 +115,16 @@ end
 function osWindow:focus()
     self.desktop.frame:removeChild(self.appFrame)
     self.desktop.frame:addChild(self.appFrame)
-    if self.appFrame then
-        self.appFrame:setVisible(true)
-    end
 end
 
 function osWindow:minimize()
     self.appFrame:setVisible(false)
-    if self.dock then
-        local canvas = self.dock.icon:getCanvas()
-        canvas:removeCommand(self.dock.iconCanvasId)
-        self.dock.iconCanvasId = canvas:text(2, 3, "\7", colors.lightGray)
-    end
 end
 
 function osWindow:restore()
     self.appFrame:setVisible(true)
-    self.appFrame:focus()
-    if self.dock then
-        local canvas = self.dock.icon:getCanvas()
-        canvas:removeCommand(self.dock.iconCanvasId)
-        self.dock.iconCanvasId = canvas:text(1, 3, "\136\140\132", colors.lightGray)
-    end
+    self:focus()
+    self.appFrame:setFocused(true)
 end
 
 function osWindow:getStatus()
