@@ -45,6 +45,26 @@ function process:minimize()
     end
 end
 
+function process:restore()
+    if self.window then
+        self.window:restore()
+        self.status = "restored"
+    end
+    if self.icon then
+        self.icon:updateStatus("restored")
+    end
+end
+
+function process:maximize()
+    if self.window then
+        self.window:maximize()
+        self.status = "maximized"
+    end
+    if self.icon then
+        self.icon:updateStatus("maximized")
+    end
+end
+
 function process:stop()
     if self.running then
         self.running = false

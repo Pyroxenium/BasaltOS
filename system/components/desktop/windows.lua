@@ -15,28 +15,35 @@ function osWindow.new(desktop, process)
     self.appFrame = desktop.frame:addFrame()
     self.appFrame:setPosition(3, 3) -- Maybe center it later
     self.appFrame:setSize(30, 12)
-    --self.appFrame:setBackground(colors.gray)
     self.appFrame:setBackgroundEnabled(false)
     self.appFrame:setDraggable(true)
 
-    self.program = self.appFrame:addProgram({y=2, x=2, width="{parent.width-2}", height="{parent.height-2}", background=colors.black})
+    self.program = self.appFrame:addProgram({y=2, x=2, width=self.appFrame.width-2, height=self.appFrame.height-2, background=colors.black})
 
     local dragMap = self.appFrame.get("draggingMap")
-    dragMap[1] = {x=4, y=1, width="width", height=1}
+    dragMap[1] = {x=5, y=1, width="width", height=1}
 
     -- Close button
     self.appFrame:addLabel({text="\7", foreground=colors.red}):onClick(function()
         self.process:stop()
-        require("logging").debug("Window closed")
     end)
     -- Minimize button
     self.appFrame:addLabel({text="\7", foreground=colors.yellow, x=2}):onClick(function()
         self.process:minimize()
-        require("logging").debug("Window minimized")
     end)
     -- Maximize button
     self.appFrame:addLabel({text="\7", foreground=colors.green, x=3}):onClick(function()
-
+        if self.status == "maximized" then
+            self:restoreSize()
+            self.status = "restored"
+        else
+            self:maximize()
+            self.status = "maximized"
+        end
+    end)
+    -- Restart button (Placeholder for now)
+    self.appFrame:addLabel({text="\7", foreground=colors.purple, x=4}):onClick(function()
+        self:restart()
     end)
 
     local frameCanvas = self.appFrame:getCanvas()
@@ -73,6 +80,59 @@ function osWindow.new(desktop, process)
         end
     end)
 
+    self.appFrame:onClick(function(element, button, x, y)
+        local width, height = element:getSize()
+        
+        -- Check if click is on resize areas (right edge or bottom edge)
+        if x >= width-1 and y >= height-1 then
+            -- Bottom-right corner
+            self.resizing = true
+            self.resizeEdge = "corner"
+            self.startX = x
+            self.startY = y
+            self.startW = width
+            self.startH = height
+        elseif x >= width-1 then
+            -- Right edge
+            self.resizing = true
+            self.resizeEdge = "right"
+            self.startX = x
+            self.startW = width
+        elseif y >= height-1 then
+            -- Bottom edge
+            self.resizing = true
+            self.resizeEdge = "bottom"
+            self.startY = y
+            self.startH = height
+        end
+    end)
+
+    self.appFrame:onDrag(function(element, _, x, y)
+        if self.resizing then
+            local dx = x - (self.startX or x)
+            local dy = y - (self.startY or y)
+            
+            if self.resizeEdge == "right" or self.resizeEdge == "corner" then
+                local newWidth = math.max(10, self.startW + dx)
+                element.set("width", newWidth)
+                self.program.set("width", newWidth-2)
+            end
+            
+            if self.resizeEdge == "bottom" or self.resizeEdge == "corner" then
+                local newHeight = math.max(5, self.startH + dy)
+                element.set("height", newHeight)
+                self.program.set("height", newHeight-2)
+            end
+        end
+    end)
+
+    self.appFrame:onClickUp(function()
+        self.dragging = false
+        self.resizing = false
+        self.resizeEdge = nil
+    end)
+
+
     self:setTitle("App Title")
     return self
 end
@@ -108,7 +168,10 @@ end
 
 function osWindow:restart()
     if self.program then
-        self.program:execute(self.path)
+        local appPath = path.resolve(self.process.app.manifest.executable)
+        if fs.exists(appPath) then
+            self.program:execute(appPath)
+        end
     end
 end
 
@@ -119,6 +182,29 @@ end
 
 function osWindow:minimize()
     self.appFrame:setVisible(false)
+end
+
+function osWindow:maximize()
+    self.appFrame:setVisible(true)
+    self:focus()
+    self.appFrame:setFocused(true)
+    self.oldWidth = self.appFrame.width
+    self.oldHeight = self.appFrame.height
+    self.oldX = self.appFrame.x
+    self.oldY = self.appFrame.y
+    self.appFrame:setSize(self.desktop.frame.width, self.desktop.frame.height-2)
+    self.program:setSize(self.appFrame.width-2, self.appFrame.height-2)
+    self.appFrame:setPosition(1, 2)
+    self.status = "maximized"
+end
+
+function osWindow:restoreSize()
+    if self.oldWidth and self.oldHeight then
+        self.appFrame:setSize(self.oldWidth, self.oldHeight)
+        self.program:setSize(self.appFrame.width-2, self.appFrame.height-2)
+        self.appFrame:setPosition(self.oldX, self.oldY)
+    end
+    self.status = "restored"
 end
 
 function osWindow:restore()

@@ -102,6 +102,7 @@ end
 ---@private
 function BasaltProgram:resize(width, height)
     self.window.reposition(1, 1, width, height)
+    self:resume("term_resize", width, height)
 end
 
 ---@private
@@ -165,6 +166,18 @@ end
 function Program:init(props, basalt)
     VisualElement.init(self, props, basalt)
     self.set("type", "Program")
+    self:observe("width", function(self, width)
+        local program = self.get("program")
+        if program then
+            program:resize(width, self.get("height"))
+        end
+    end)
+    self:observe("height", function(self, height)
+        local program = self.get("program")
+        if program then
+            program:resize(self.get("width"), height)
+        end
+    end)
     return self
 end
 
