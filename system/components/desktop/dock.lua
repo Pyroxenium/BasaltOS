@@ -14,25 +14,34 @@ function icon.new(app, dock)
         self.iconElement:setPosition(#self.dock.apps * 4 + 2, 1)
         self.iconElement:setSize(3, 2)
         self.iconElement:setBimg(self.bimg)
-        self.iconElement:onClick(function()
-            if not self.process then
-                self.process = self:launchApp()
-                if self.process.window then
-                    self:updateStatus("maximized")
-                end
-            else
-                if self.process.window then
-                    if self.process.window:getStatus() == "maximized" then
-                        self:updateStatus("minimized")
-                        self.process.window:minimize()
-                    else
+        self.iconElement:onClick(function(_, button, x, y)
+            if button == 1 then
+                if not self.process then
+                    self.process = self:launchApp()
+                    if self.process.window then
                         self:updateStatus("maximized")
-                        self.process.window:restore()
+                    end
+                else
+                    if self.process.window then
+                        if self.process.window:getStatus() == "maximized" then
+                            self:updateStatus("minimized")
+                            self.process.window:minimize()
+                        else
+                            self:updateStatus("maximized")
+                            self.process.window:restore()
+                        end
                     end
                 end
             end
+            if button == 2 then
+                self:openContextMenu()
+            end
         end)
     return self
+end
+
+function icon:openContextMenu()
+    -- TODO: Context menu logic
 end
 
 function icon:launchApp()

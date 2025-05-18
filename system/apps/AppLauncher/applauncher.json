@@ -1,0 +1,13 @@
+{
+    "name": "AppLauncher",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "Application launcher",
+    "executable": "{system}/apps/AppLauncher/applauncher.lua",
+    "window": {
+        "width": 30,
+        "height": 15,
+        "resizable": true,
+        "title": "AppLauncher"
+    }
+}

@@ -1,4 +1,4 @@
-local basalt = require("libraries.private.basalt")
+local basalt = require("libraries.public.basalt")
 
 local menubar = {}
 menubar.__index = menubar

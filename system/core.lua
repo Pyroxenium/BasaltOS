@@ -1,27 +1,16 @@
 local defaultPath = package.path
 local format = "path;/path/?.lua;/path/?/init.lua;"
 
-local libs = format:gsub("path", "system/libraries/public/")
-local main = format:gsub("path", "system/")
+local libs = format:gsub("path", shell.dir().."/system/libraries/public/")
+local main = format:gsub("path", shell.dir().."/system/")
 package.path = libs..main..defaultPath
 
-local basalt = require("libraries.private.basalt")
+local basalt = require("libraries.public.basalt")
 local screenManager = require("libraries.private.screenManager")
 local appManager = require("libraries.private.appManager")
 local desktop
 --local store = require("libraries.private.store")
 local backgroundProcess = {}
-
-local make_package = dofile("rom/modules/main/cc/require.lua").make
-
-local function createEnvironment(dir, _env) -- TODO: Create multishell wrapper for desktop windowManager instead of cc tweaked multishell
-    _env = _env or {}
-    local env = setmetatable(_env, {__index=_ENV})
-    env.shell = shell
-    env.require, env.package = make_package(env, fs.getDir(dir))
-
-    return env
-end
 
 local core = {
     version = "1.0.0",

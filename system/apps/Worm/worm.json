@@ -4,10 +4,10 @@
     "author": "System",
     "description": "Worm",
     "executable": "rom/programs/fun/worm.lua",
-    "windows": {
-        "width": 30,
-        "height": 15,
-        "resizable": true,
+    "window": {
+        "width": 40,
+        "height": 18,
+        "fullscreen": true,
         "title": "Worm"
     }
 }

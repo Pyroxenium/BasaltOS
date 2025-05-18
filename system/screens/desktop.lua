@@ -1,4 +1,4 @@
-local basalt = require("libraries.private.basalt")
+local basalt = require("libraries.public.basalt")
 local dockComponent = require("components/desktop/dock")
 local menubarComponent = require("components/desktop/menubar")
 local windowsComponent = require("components/desktop/windows")

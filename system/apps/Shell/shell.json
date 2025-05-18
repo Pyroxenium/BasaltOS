@@ -4,10 +4,9 @@
     "author": "System",
     "description": "Shell",
     "executable": "rom/programs/shell.lua",
-    "windows": {
-        "width": 30,
+    "window": {
+        "width": 35,
         "height": 15,
-        "resizable": true,
         "title": "Shell"
     }
 }

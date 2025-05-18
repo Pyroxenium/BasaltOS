@@ -2,7 +2,7 @@ local format = "path;/path/?.lua;/path/?/init.lua;"
 local libs = format:gsub("path", "system/libraries/public/")
 local main = format:gsub("path", "system/")
 
-local basalt = require("libraries.private.basalt")
+local basalt = require("libraries.public.basalt")
 
 local screens = {}
 local screenManager = {}
