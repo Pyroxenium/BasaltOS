@@ -3,6 +3,7 @@ local dockComponent = require("components/desktop/dock")
 local menubarComponent = require("components/desktop/menubar")
 local windowsComponent = require("components/desktop/windows")
 local config = require("libraries.private.configs")
+local processManager = require("libraries.private.processManager")
 
 local desktop = {}
 desktop.__index = desktop
@@ -14,12 +15,37 @@ function desktop.new(id)
     local self = setmetatable({}, desktop)
     self.id = id
     self.frame = basalt.createFrame()
-    self.frame:setBackground(config.get("theme", "background"))
+    self.frame:setBackground(config.get("desktop", "background"))
     self.dock = dockComponent.new(self)
     self.menubar = menubarComponent.new(self)
     self.windowManager = windowsComponent.new(self)
+
     activeDesktop = self
     return self
+end
+
+function desktop:getApps()
+    local appManager = require("libraries.private.appManager")
+    return appManager.getApps()
+end
+
+function desktop:openApp(name, ...)
+    local appManager = require("libraries.private.appManager")
+    local app = appManager.getApp(name)
+    if app then
+        local process = processManager.create(app)
+        if process then
+            process:run(...)
+            if app.dockIcon then
+                app.dockIcon:launchApp()
+            end
+            return process
+        else
+            error("Failed to launch app: " .. name)
+        end
+    else
+        error("App not found: " .. name)
+    end
 end
 
 local desktopManager = {desktops={}}

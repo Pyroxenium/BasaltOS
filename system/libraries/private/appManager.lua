@@ -40,6 +40,10 @@ function appManager.getApp(name)
     end
 end
 
+function appManager.getApps()
+    return appManager.apps
+end
+
 -- Path to manifest file
 function appManager.registerApp(basePath)
     local path = pathManager.resolve(basePath):gsub(".json", "").. ".json"

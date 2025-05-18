@@ -16,7 +16,7 @@ local core = {
     version = "1.0.0",
     name = "Basalt OS Template",
     isRunning = false,
-    LOGGER = require("logging")
+    LOGGER = require("libraries.private.log")
 }
 
 local function handleBackgroundProcess(event, ...)

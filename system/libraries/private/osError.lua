@@ -1,7 +1,14 @@
-local errorManager = {}
+local basalt = require("libraries.public.basalt")
 
-errorManager.error = function(message)
+local osError = {}
+
+osError.error = function(message)
     error(message)
 end
 
-return errorManager
+osError.warning = function(message)
+    print("Warning: " .. message)
+end
+
+
+return osError

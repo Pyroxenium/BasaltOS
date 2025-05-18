@@ -9,6 +9,14 @@ function menubar.new(desktop)
     self.menubar = desktop.frame:addFrame({z=100, width="{parent.width}", height=1})
     self.menubar:setBackground(colors.gray)
     self.menubar:setForeground(colors.white)
+    self.curWindow = nil
+    self.programMenubar = self.menubar:addFrame({
+        width="{parent.width - 16}",
+        x = 10,
+        height=1,
+        background = "{parent.background}",
+        background = colors.black -- temporary to see size
+    })
 
     local date = desktop.frame:addLabel():setVisible(false)
     date:setBackground(colors.gray)
@@ -46,6 +54,28 @@ function menubar.new(desktop)
     end)
 
     return self
+end
+
+function menubar:setMenu(list, window)
+    self.programMenubar:clear()
+    self.curWindow = window
+    local x = 1
+    for name, callback in pairs(list) do
+        local label = self.programMenubar:addLabel({
+            text=name,
+            x=x,
+            foreground=colors.white,
+        })
+
+        label:onClickUp(function()
+            self.curWindow = window
+            callback()
+            if window then
+                window.appFrame:setFocused(true)
+            end
+        end)
+        x = x + #name + 1
+    end
 end
 
 return menubar

@@ -29,7 +29,13 @@ end
 
 function configs.get(category, key)
     local categoryData = loadCategory(category)
-    if not key then return categoryData end
+    if not key then 
+        local t = {}
+        for k,v in pairs(categoryData) do
+            t[k] = colors[v] or v
+        end
+        return t
+     end
     return colors[categoryData[key]] or categoryData[key]
 end
 

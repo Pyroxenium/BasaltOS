@@ -1,1 +1,1 @@
-{"Shell":{"name":"Shell","path":"{system}/apps/Shell/shell"},"Finder":{"name":"Finder","path":"{system}/apps/Finder/finder"},"Worm":{"name":"Worm","path":"{system}/apps/Worm/worm"}}
+{"Worm":{"name":"Worm","path":"{system}/apps/Worm/worm"},"Finder":{"name":"Finder","path":"{system}/apps/Finder/finder"},"Shell":{"name":"Shell","path":"{system}/apps/Shell/shell"}}

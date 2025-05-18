@@ -1,6 +1,7 @@
 local configs = require("libraries.private.configs")
 local path = require("libraries.public.path")
 local colorHex = require("libraries.public.utils").tHex
+local deepCopy = require("libraries.public.utils").deepCopy
 
 local windowManager = {}
 windowManager.__index = windowManager
@@ -13,12 +14,12 @@ local make_package = dofile("rom/modules/main/cc/require.lua").make
 local format = "path;/path/?.lua;/path/?/init.lua;"
 local libs = format:gsub("path", "{system}/libraries/public/")
 
-local function createEnvironment(dir) -- TODO: Create multishell wrapper for desktop windowManager instead of cc tweaked multishell
-    local env = setmetatable({}, {__index=_ENV})
-    env.shell = shell
-    env.require, env.package = make_package(env, fs.getDir(dir))
-    env.package.path = path.resolve(libs)..env.package.path
-    return env
+local basaltos = require("basaltos")
+
+local function setupBasaltOSApi(desktop)
+    basaltos.setup(desktop)
+    basaltos.setRoot(path.resolve("{system}"))
+    basaltos.setRoot = nil
 end
 
 local function getDir(process)
@@ -26,6 +27,62 @@ local function getDir(process)
     if appPath then
         return fs.getDir(path.resolve(appPath))
     end
+end
+
+-- This function generates application-specific APIs
+local function generateBasaltOS(process)
+    local osAPI = deepCopy(basaltos)
+    osAPI.getAppPath = function()
+        return path.resolve(getDir(process))
+    end
+    osAPI.getAppName = function()
+        return process.app.manifest.name
+    end
+    osAPI.setTitle = function(title)
+        process.window:setTitle(title)
+    end
+    osAPI.setBackground = function(color)
+        process.window.defaultColor = color
+    end
+    osAPI.getBackground = function()
+        return process.window.defaultColor
+    end
+    osAPI.setForeground = function(color)
+        process.window.title:setForeground(color)
+        process.window.titleColor = color
+    end
+    if process.app.manifest.window.resizable and not process.app.manifest.window.fullscreen then
+        osAPI.setSize = function(width, height)
+            process.window.appFrame:setSize(width, height) 
+            --process.window.program.set("width", width-2) -- Doesn't work need to figure out why
+            --process.window.program.set("height", height-2)
+        end
+    end
+    osAPI.setAppFrameColor = function(color)
+        process.window.appFrame:setBackground(color)
+    end
+
+    osAPI.setMenu = function(list)
+        process.window:setMenu(list)
+    end
+
+    return osAPI
+end
+
+
+local function createEnvironment(process) -- TODO: Create multishell wrapper for desktop windowManager instead of cc tweaked multishell
+    local dir = getDir(process)
+    if not dir then
+        error("No directory found for the process")
+    end
+    local env = setmetatable({}, {__index=_ENV})
+    env.shell = shell
+    env.require, env.package = make_package(env, fs.getDir(dir))
+    env.package.path = path.resolve(libs)..env.package.path
+    env.package.preload.basaltos = function()
+        return generateBasaltOS(process)
+    end
+    return env
 end
 
 local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
@@ -61,7 +118,7 @@ local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
 
     local titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
-    :setBackground(configs.get("windows", "blurColor"))
+    :setBackground(configs.get("windows", "defaultColor"))
 
     self.appFrame:onFocus(function()
         titleBar:setBackground(configs.get("windows", "focusColor"))
@@ -71,16 +128,18 @@ local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
     end)
 
     self.appFrame:onBlur(function()
-        titleBar:setBackground(configs.get("windows", "blurColor"))
+        titleBar:setBackground(configs.get("windows", "defaultColor"))
         if self.title then
-            self.title:setForeground(configs.get("windows", "blurTextColor"))
+            self.title:setForeground(configs.get("windows", "defaultTextColor"))
         end
     end)
 end
 
 local function createWindow(self, process, desktop) -- WINDOWED VERSION
     local manifest = process.app.manifest
-
+    self.focusColor = configs.get("windows", "focusColor")
+    self.defaultColor = configs.get("windows", "defaultColor")
+    self.titleColor = configs.get("windows", "defaultTextColor")
     -- Create the window frame
     self.appFrame = desktop.frame:addFrame()
     self.appFrame:setPosition(3, 3) -- Maybe center it later
@@ -121,35 +180,36 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
 
     local frameCanvas = self.appFrame:getCanvas()
 
-    frameCanvas:addCommand(function(self) -- Border for Frame:
-        local width, height = self.get("width"), self.get("height")
-        local bg = self.get("background")
-        local borderColor = self.focused and configs.get("windows", "focusColor") or configs.get("windows", "blurColor")
+    frameCanvas:addCommand(function(_self) -- Border for Frame:
+        local width, height = _self.get("width"), _self.get("height")
+        local bg = _self.get("background")
+        local borderColor = _self.focused and self.focusColor or self.defaultColor
 
-        self:textFg(1, height, ("\131"):rep(width), borderColor)
+        _self:textFg(1, height, ("\131"):rep(width), borderColor)
         for i = 1, height-1 do
-            self:blit(1, i, ("\149"), colorHex[borderColor], colorHex[bg])
-            self:blit(width, i, ("\149"), colorHex[bg], colorHex[borderColor])
+            _self:blit(1, i, ("\149"), colorHex[borderColor], colorHex[bg])
+            _self:blit(width, i, ("\149"), colorHex[bg], colorHex[borderColor])
         end
     end)
 
 
-    local titleBar = self.appFrame:addVisualElement()
+    self.titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
-    :setBackground(configs.get("windows", "blurColor"))
+    :setBackground(self.defaultColor)
 
     self.appFrame:onFocus(function()
         self.focus(self)
-        titleBar:setBackground(configs.get("windows", "focusColor"))
+        self.desktop.menubar:setMenu(self.menuItems, self)
+        self.titleBar:setBackground(self.focusColor)
         if self.title then
             self.title:setForeground(configs.get("windows", "focusTextColor"))
         end
     end)
 
     self.appFrame:onBlur(function()
-        titleBar:setBackground(configs.get("windows", "blurColor"))
+        self.titleBar:setBackground(self.defaultColor)
         if self.title then
-            self.title:setForeground(configs.get("windows", "blurTextColor"))
+            self.title:setForeground(self.titleColor)
         end
     end)
 
@@ -213,6 +273,7 @@ function osWindow.new(desktop, process)
     local manifest = process.app.manifest
     self.process = process
     self.desktop = desktop
+    self.menuItems = {}
 
     if manifest.window.fullscreen then
         createFullscreen(self, process, desktop)
@@ -221,6 +282,17 @@ function osWindow.new(desktop, process)
     end
     self:setTitle("App Title")
     return self
+end
+
+function osWindow:setMenu(list)
+    self.menuItems = list
+    if self.appFrame.focused then
+        self.desktop.menubar:setMenu(list, self)
+    end
+end
+
+function osWindow:getMenu()
+    return self.menuItems
 end
 
 function osWindow:setTitle(title)
@@ -236,7 +308,7 @@ function osWindow:run()
                 if self.process.app.manifest.executable then
                     local appPath = path.resolve(self.process.app.manifest.executable)
                     if fs.exists(appPath) then
-                        self.program:execute(appPath, createEnvironment(getDir(self.process)))
+                        self.program:execute(appPath, createEnvironment(self.process))
                     end
                 end
             end
@@ -255,7 +327,7 @@ function osWindow:restart()
     if self.program then
         local appPath = path.resolve(self.process.app.manifest.executable)
         if fs.exists(appPath) then
-            self.program:execute(appPath)
+            self.program:execute(appPath, createEnvironment(self.process))
         end
     end
 end
@@ -304,6 +376,7 @@ end
 
 -- Window Manager Functions
 function windowManager.new(desktop)
+    setupBasaltOSApi(desktop)
     local self = setmetatable({}, windowManager)
     self.desktop = desktop
     return self
