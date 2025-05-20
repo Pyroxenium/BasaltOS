@@ -69,6 +69,7 @@ end
 function core.init()
     -- Application Registry
     appManager.registerApp("{system}/apps/Finder/finder")
+    appManager.registerApp("{system}/apps/Edit/edit")
     appManager.registerApp("{system}/apps/Worm/worm")
 
     --core.switchScreen("login")

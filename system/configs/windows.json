@@ -3,6 +3,8 @@
     "defaultHeight": 10,
     "focusColor": "blue",
     "focusTextColor": "white",
-    "defaultColor": "gray",
-    "defaultTextColor": "black"
+    "primaryColor": "gray",
+    "primaryTextColor": "white",
+    "secondaryColor": "black",
+    "secondaryTextColor": "white"
 }

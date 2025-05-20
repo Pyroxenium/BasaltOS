@@ -10,13 +10,14 @@ function menubar.new(desktop)
     self.menubar:setBackground(colors.gray)
     self.menubar:setForeground(colors.white)
     self.curWindow = nil
+    self.lastWindow = nil
     self.programMenubar = self.menubar:addFrame({
         width="{parent.width - 16}",
         x = 10,
         height=1,
-        background = "{parent.background}",
-        background = colors.black -- temporary to see size
+        background = "{parent.background}"
     })
+
 
     local date = desktop.frame:addLabel():setVisible(false)
     date:setBackground(colors.gray)
@@ -59,6 +60,7 @@ end
 function menubar:setMenu(list, window)
     self.programMenubar:clear()
     self.curWindow = window
+    self.lastWindow = window and window or self.lastWindow
     local x = 1
     for name, callback in pairs(list) do
         local label = self.programMenubar:addLabel({
@@ -66,13 +68,18 @@ function menubar:setMenu(list, window)
             x=x,
             foreground=colors.white,
         })
-
+        label:onClick(function()
+            self.curWindow = self.lastWindow
+            basalt.schedule(function()
+                sleep(0.05)
+                if self.lastWindow then
+                    self.lastWindow.appFrame:setFocused(true)
+                end
+            end)
+        end)
         label:onClickUp(function()
             self.curWindow = window
             callback()
-            if window then
-                window.appFrame:setFocused(true)
-            end
         end)
         x = x + #name + 1
     end

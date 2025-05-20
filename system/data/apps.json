@@ -1,1 +1,1 @@
-{"Worm":{"name":"Worm","path":"{system}/apps/Worm/worm"},"Finder":{"name":"Finder","path":"{system}/apps/Finder/finder"},"Shell":{"name":"Shell","path":"{system}/apps/Shell/shell"}}
+{"Shell":{"name":"Shell","path":"{system}/apps/Shell/shell"},"Worm":{"name":"Worm","path":"{system}/apps/Worm/worm"},"Finder":{"name":"Finder","path":"{system}/apps/Finder/finder"},"Edit":{"name":"Edit","path":"{system}/apps/Edit/edit"}}

@@ -20,7 +20,7 @@ function process:setIcon(icon)
     self.icon = icon
 end
 
-function process:run()
+function process:run(...)
     if not self.running then
         self.running = true
         self.status = "running"
@@ -28,7 +28,7 @@ function process:run()
         local wManager = self.app:getDesktop().windowManager
             self.window = wManager:createWindow(self)
             self.window:setTitle(self.app.manifest.name)
-            self.window:run()
+            self.window:run(...)
         end
 
         -- add icon if icon doesnt exist

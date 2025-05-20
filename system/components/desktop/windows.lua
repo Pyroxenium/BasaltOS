@@ -42,10 +42,10 @@ local function generateBasaltOS(process)
         process.window:setTitle(title)
     end
     osAPI.setBackground = function(color)
-        process.window.defaultColor = color
+        process.window.primaryColor = color
     end
     osAPI.getBackground = function()
-        return process.window.defaultColor
+        return process.window.primaryColor
     end
     osAPI.setForeground = function(color)
         process.window.title:setForeground(color)
@@ -118,7 +118,7 @@ local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
 
     local titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
-    :setBackground(configs.get("windows", "defaultColor"))
+    :setBackground(configs.get("windows", "primaryColor"))
 
     self.appFrame:onFocus(function()
         titleBar:setBackground(configs.get("windows", "focusColor"))
@@ -128,9 +128,9 @@ local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
     end)
 
     self.appFrame:onBlur(function()
-        titleBar:setBackground(configs.get("windows", "defaultColor"))
+        titleBar:setBackground(configs.get("windows", "primaryColor"))
         if self.title then
-            self.title:setForeground(configs.get("windows", "defaultTextColor"))
+            self.title:setForeground(configs.get("windows", "primaryTextColor"))
         end
     end)
 end
@@ -138,8 +138,8 @@ end
 local function createWindow(self, process, desktop) -- WINDOWED VERSION
     local manifest = process.app.manifest
     self.focusColor = configs.get("windows", "focusColor")
-    self.defaultColor = configs.get("windows", "defaultColor")
-    self.titleColor = configs.get("windows", "defaultTextColor")
+    self.primaryColor = configs.get("windows", "primaryColor")
+    self.titleColor = configs.get("windows", "primaryTextColor")
     -- Create the window frame
     self.appFrame = desktop.frame:addFrame()
     self.appFrame:setPosition(3, 3) -- Maybe center it later
@@ -183,7 +183,7 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
     frameCanvas:addCommand(function(_self) -- Border for Frame:
         local width, height = _self.get("width"), _self.get("height")
         local bg = _self.get("background")
-        local borderColor = _self.focused and self.focusColor or self.defaultColor
+        local borderColor = _self.focused and self.focusColor or self.primaryColor
 
         _self:textFg(1, height, ("\131"):rep(width), borderColor)
         for i = 1, height-1 do
@@ -195,7 +195,7 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
 
     self.titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
-    :setBackground(self.defaultColor)
+    :setBackground(self.primaryColor)
 
     self.appFrame:onFocus(function()
         self.focus(self)
@@ -207,7 +207,7 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
     end)
 
     self.appFrame:onBlur(function()
-        self.titleBar:setBackground(self.defaultColor)
+        self.titleBar:setBackground(self.primaryColor)
         if self.title then
             self.title:setForeground(self.titleColor)
         end
@@ -215,9 +215,10 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
 
     if manifest.window.resizable then
         self.appFrame:onClick(function(element, button, x, y)
+            self.desktop.menubar.curWindow = self
             local width, height = element:getSize()
 
-            if x >= width-1 and y >= height-1 then
+            if x >= width and y >= height then
                 -- Bottom-right corner
                 self.resizing = true
                 self.resizeEdge = "corner"
@@ -225,13 +226,13 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
                 self.startY = y
                 self.startW = width
                 self.startH = height
-            elseif x >= width-1 then
+            elseif x >= width then
                 -- Right edge
                 self.resizing = true
                 self.resizeEdge = "right"
                 self.startX = x
                 self.startW = width
-            elseif y >= height-1 then
+            elseif y >= height then
                 -- Bottom edge
                 self.resizing = true
                 self.resizeEdge = "bottom"
@@ -301,14 +302,14 @@ function osWindow:setTitle(title)
     end
 end
 
-function osWindow:run()
+function osWindow:run(...)
     if self.process then
         if self.process.app then
             if self.process.app.manifest then
                 if self.process.app.manifest.executable then
                     local appPath = path.resolve(self.process.app.manifest.executable)
                     if fs.exists(appPath) then
-                        self.program:execute(appPath, createEnvironment(self.process))
+                        self.program:execute(appPath, createEnvironment(self.process), nil, ...)
                     end
                 end
             end

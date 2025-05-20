@@ -1,0 +1,13 @@
+{
+    "name": "Edit",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "Edit",
+    "executable": "rom/programs/edit.lua",
+    "window": {
+        "width": 35,
+        "height": 15,
+        "resizable": true,
+        "title": "Edit"
+    }
+}

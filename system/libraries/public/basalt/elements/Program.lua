@@ -28,9 +28,14 @@ local newPackage = dofile("rom/modules/main/cc/require.lua").make
 function BasaltProgram.new(program, env, addEnvironment)
     local self = setmetatable({}, BasaltProgram)
     self.env = env or {}
+    self.args = {}
     self.addEnvironment = addEnvironment == nil and true or addEnvironment
     self.program = program
     return self
+end
+
+function BasaltProgram:setArgs(...)
+    self.args = {...}
 end
 
 local function createShellEnv(dir)
@@ -42,7 +47,7 @@ end
 ---@private
 function BasaltProgram:run(path, width, height)
     self.window = window.create(self.program:getBaseFrame():getTerm(), 1, 1, width, height, false)
-    local pPath = path
+    local pPath = shell.resolveProgram(path) or fs.exists(path) and path or nil
     if(pPath~=nil)then
         if(fs.exists(pPath)) then
             local file = fs.open(pPath, "r")
@@ -52,7 +57,6 @@ function BasaltProgram:run(path, width, height)
             local env = setmetatable(createShellEnv(fs.getDir(path)), { __index = _ENV })
             env.term = self.window
             env.term.current = term.current
-            env.term.redirect = term.redirect
             env.term.native = function ()
                 return self.window
             end
@@ -68,7 +72,7 @@ function BasaltProgram:run(path, width, height)
             self.coroutine = coroutine.create(function()
                 local program = load(content, "@/" .. path, nil, env)
                 if program then
-                    local result = program()
+                    local result = program(table.unpack(self.args))
                     return result
                 end
             end)
@@ -166,7 +170,7 @@ end
 function Program:init(props, basalt)
     VisualElement.init(self, props, basalt)
     self.set("type", "Program")
-    self:observe("width", function(self, width)
+        self:observe("width", function(self, width)
         local program = self.get("program")
         if program then
             program:resize(width, self.get("height"))
@@ -187,16 +191,20 @@ end
 --- @param env? table The environment to run the program in
 --- @param addEnvironment? boolean Whether to add the environment to the program's environment (false = overwrite instead of adding)
 --- @return Program self The Program instance
-function Program:execute(path, env, addEnvironment)
+function Program:execute(path, env, addEnvironment, ...)
     self.set("path", path)
     self.set("running", true)
     local program = BasaltProgram.new(self, env, addEnvironment)
     self.set("program", program)
-    program:run(path, self.get("width"), self.get("height"))
+    program:setArgs(...)
+    program:run(path, self.get("width"), self.get("height"), ...)
     self:updateRender()
     return self
 end
 
+--- Stops the program
+--- @shortDescription Stops the program
+--- @return Program self The Program instance
 function Program:stop()
     local program = self.get("program")
     if program then

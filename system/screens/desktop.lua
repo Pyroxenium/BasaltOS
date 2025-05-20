@@ -15,11 +15,20 @@ function desktop.new(id)
     local self = setmetatable({}, desktop)
     self.id = id
     self.frame = basalt.createFrame()
-    self.frame:setBackground(config.get("desktop", "background"))
+    self.frame:setBackground(config.get("desktop", "primaryColor"))
     self.dock = dockComponent.new(self)
     self.menubar = menubarComponent.new(self)
     self.windowManager = windowsComponent.new(self)
 
+    self.frame:onClick(function()
+        self.menubar.curWindow = nil
+    end)
+    self.frame:onClickUp(function()
+        if not self.menubar.curWindow then
+            self.menubar:setMenu({})
+            self.menubar.lastWindow = nil
+        end
+    end)
     activeDesktop = self
     return self
 end

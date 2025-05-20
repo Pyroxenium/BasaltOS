@@ -1,4 +1,4 @@
 {
-    "background": "lightGray",
-    "textColor": "white"
+    "primaryColor": "lightGray",
+    "secondaryColor": "black"
 }
