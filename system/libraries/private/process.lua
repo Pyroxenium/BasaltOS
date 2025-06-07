@@ -2,10 +2,11 @@ local process = {}
 process.__index = process
 
 
-function process.new(app, pid)
+function process.new(desktop, app, pid)
     local self = setmetatable({}, process)
     self.app = app
     self.pid = pid
+    self.desktop = desktop
     self.running = false
     self.created = os.epoch("utc")
     self.status = "created"  -- created, running, suspended, terminated
@@ -25,13 +26,14 @@ function process:run(...)
         self.running = true
         self.status = "running"
         if not self.window then
-        local wManager = self.app:getDesktop().windowManager
-            self.window = wManager:createWindow(self)
+            self.window = self.desktop.windowManager:createWindow(self)
             self.window:setTitle(self.app.manifest.name)
             self.window:run(...)
-        end
 
-        -- add icon if icon doesnt exist
+            local iconImg = self.app.manifest.icon
+            iconImg = iconImg or "{assets}/icons/default.bimg"
+            self.icon = self.desktop.dock:add(self.app)
+        end
     end
 end
 

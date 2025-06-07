@@ -71,6 +71,7 @@ function core.init()
     appManager.registerApp("{system}/apps/Finder/finder")
     appManager.registerApp("{system}/apps/Edit/edit")
     appManager.registerApp("{system}/apps/Worm/worm")
+    appManager.registerApp("{system}/apps/AppLauncher/applauncher")
 
     --core.switchScreen("login")
 
@@ -78,10 +79,16 @@ function core.init()
     desktop = screenManager.switchScreen("desktop")
     local activeDesktop = desktop.getActive()
 
-    -- Pin finder to the dock
-    activeDesktop.dock:add(appManager.getApp("Finder"))
-    activeDesktop.dock:add(appManager.getApp("Shell"))
-    activeDesktop.dock:add(appManager.getApp("Worm"))
+    -- Pin specific apps to the dock
+    local finderIcon = activeDesktop.dock:add(appManager.getApp("Finder"))
+    finderIcon:setPinned(true)
+    
+    local wormIcon = activeDesktop.dock:add(appManager.getApp("Worm"))
+    wormIcon:setPinned(true)
+    
+    local launcherIcon = activeDesktop.dock:add(appManager.getApp("AppLauncher"))
+    launcherIcon:setPinned(true)
+    
     core.run()
 end
 

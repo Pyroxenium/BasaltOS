@@ -1,0 +1,11 @@
+{
+    "name": "AppLauncher",
+    "executable": "applauncher.lua",
+    "icon": "icon.bimg",
+    "window": {
+        "width": 40,
+        "height": 20,
+        "resizable": true,
+        "fullscreen": false
+    }
+}

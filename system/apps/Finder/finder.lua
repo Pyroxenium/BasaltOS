@@ -66,17 +66,19 @@ end
 updateList()
 
 fList:onClickUp(function(self, btn, x, y)
-    local selected = self:getData()[y-1+self.scrollOffset]
-    if selected then
-        local fileName = selected[1]
-        local filePath = path .. "/" .. fileName
-        if fs.isDir(filePath) then
-            table.insert(backHistory, path)
-            path = filePath
-            updateList()
-        else
-            --shell.run("edit", filePath)
-            BasaltOS.openApp("Edit", filePath)
+    if self.focused then
+        local selected = self:getData()[y-1+self.scrollOffset]
+        if selected then
+            local fileName = selected[1]
+            local filePath = path .. "/" .. fileName
+            if fs.isDir(filePath) then
+                table.insert(backHistory, path)
+                path = filePath
+                updateList()
+            else
+                --shell.run("edit", filePath)
+                BasaltOS.openApp("Edit", filePath)
+            end
         end
     end
 end)

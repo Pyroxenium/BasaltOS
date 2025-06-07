@@ -42,12 +42,26 @@ function desktop:openApp(name, ...)
     local appManager = require("libraries.private.appManager")
     local app = appManager.getApp(name)
     if app then
-        local process = processManager.create(app)
+        local dockIcon = self.dock:getPinnedApp(app)
+        if dockIcon and dockIcon.process and dockIcon.process.window then
+            dockIcon.process.window:restore()
+            dockIcon:updateStatus("maximized")
+            return dockIcon.process
+        end
+
+        local process = processManager.create(self, app)
         if process then
-            process:run(...)
-            if app.dockIcon then
-                app.dockIcon:launchApp()
+            if dockIcon then
+                process.dockIcon = dockIcon
+                dockIcon.process = process
+            else
+                dockIcon = self.dock:add(app)
+                dockIcon:updateStatus("maximized")
+                process.dockIcon = dockIcon
+                dockIcon.process = process
             end
+
+            process:run(...)
             return process
         else
             error("Failed to launch app: " .. name)

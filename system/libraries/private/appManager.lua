@@ -22,10 +22,15 @@ function app:attachToDock()
         self.dockIcon = desktopManager.getActive().dock:add(self)
         return self.dockIcon
     end
+    return self.dockIcon
 end
 
-function app:getDesktop()
-    return desktopManager.getActive()
+function app:pinToDock()
+    local icon = self:attachToDock()
+    if icon then
+        icon:setPinned(true)
+    end
+    return icon
 end
 
 -- App Manager
@@ -57,6 +62,7 @@ function appManager.registerApp(basePath)
         if not manifest then
             error("Invalid manifest file: " .. path)
         end
+        manifest.path = basePath -- Store the base path in manifest
         appManager.apps[manifest.name] = app.new(manifest)
         store.set("apps", manifest.name, {path=basePath, name=manifest.name})
     end

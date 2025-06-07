@@ -6,8 +6,8 @@ local processManager = {}
 processManager.processes = {}
 local pid = 0
 
-function processManager.create(app)
-    local newProcess = process.new(app, pid)
+function processManager.create(desktop, app)
+    local newProcess = process.new(desktop, app, pid)
     processManager.processes[pid] = newProcess
     pid = pid + 1
     return newProcess
@@ -20,6 +20,10 @@ end
 function processManager.remove(pid)
     local proc = processManager.get(pid)
     if proc then
+        -- Clean up dock icon if it exists
+        if proc.dockIcon then
+            proc.dockIcon:remove()
+        end
         proc:stop()
         processManager.processes[pid] = nil
     end

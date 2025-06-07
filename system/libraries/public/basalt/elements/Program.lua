@@ -57,6 +57,7 @@ function BasaltProgram:run(path, width, height)
             local env = setmetatable(createShellEnv(fs.getDir(path)), { __index = _ENV })
             env.term = self.window
             env.term.current = term.current
+            env.term.redirect = term.redirect
             env.term.native = function ()
                 return self.window
             end

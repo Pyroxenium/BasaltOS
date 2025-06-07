@@ -1,1 +1,1 @@
-{"Shell":{"name":"Shell","path":"{system}/apps/Shell/shell"},"Worm":{"name":"Worm","path":"{system}/apps/Worm/worm"},"Finder":{"name":"Finder","path":"{system}/apps/Finder/finder"},"Edit":{"name":"Edit","path":"{system}/apps/Edit/edit"}}
+{"AppLauncher":{"path":"{system}/apps/AppLauncher/applauncher","name":"AppLauncher"},"Worm":{"path":"{system}/apps/Worm/worm","name":"Worm"},"Edit":{"path":"{system}/apps/Edit/edit","name":"Edit"},"Shell":{"path":"{system}/apps/Shell/shell","name":"Shell"},"Finder":{"path":"{system}/apps/Finder/finder","name":"Finder"}}
