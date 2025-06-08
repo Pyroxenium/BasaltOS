@@ -4,6 +4,7 @@
     "author": "System",
     "description": "Shell",
     "executable": "rom/programs/shell.lua",
+    "icon": "{assets}/icons/shell.bimg",
     "window": {
         "width": 35,
         "height": 15,

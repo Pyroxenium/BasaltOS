@@ -4,9 +4,12 @@
     "author": "System",
     "description": "File management application",
     "executable": "{system}/apps/Finder/finder.lua",
+    "icon": "{assets}/icons/finder.bimg",
     "window": {
         "width": 30,
         "height": 13,
+        "min_width": 20,
+        "min_height": 8,
         "resizable": true,
         "title": "Finder"
     }

@@ -89,15 +89,12 @@ function core.init()
     local activeDesktop = desktop.getActive()
 
     -- Pin specific apps to the dock
-    local finderIcon = activeDesktop.dock:add(appManager.getApp("Finder"))
-    finderIcon:setPinned(true)
-    
-    local wormIcon = activeDesktop.dock:add(appManager.getApp("Worm"))
-    wormIcon:setPinned(true)
-    
     local launcherIcon = activeDesktop.dock:add(appManager.getApp("AppLauncher"))
     launcherIcon:setPinned(true)
     
+    local finderIcon = activeDesktop.dock:add(appManager.getApp("Finder"))
+    finderIcon:setPinned(true)
+
     core.run()
 end
 

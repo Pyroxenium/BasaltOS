@@ -53,9 +53,23 @@ local function generateBasaltOS(process)
     end
     if process.app.manifest.window.resizable and not process.app.manifest.window.fullscreen then
         osAPI.setSize = function(width, height)
-            process.window.appFrame:setSize(width, height) 
-            --process.window.program.set("width", width-2) -- Doesn't work need to figure out why
-            --process.window.program.set("height", height-2)
+            local minWidth = process.window.minWidth or 15
+            local minHeight = process.window.minHeight or 6
+
+            local newWidth = math.max(minWidth, width)
+            local newHeight = math.max(minHeight, height)
+
+            process.window.appFrame:setSize(newWidth, newHeight)
+            process.window.program:setSize(newWidth-2, newHeight-2)
+        end
+
+        osAPI.getMinSize = function()
+            return process.window.minWidth or 15, process.window.minHeight or 6
+        end
+
+        osAPI.setMinSize = function(minWidth, minHeight)
+            process.window.minWidth = minWidth or 15
+            process.window.minHeight = minHeight or 6
         end
     end
     osAPI.setAppFrameColor = function(color)
@@ -140,6 +154,9 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
     self.focusColor = configs.get("windows", "focusColor")
     self.primaryColor = configs.get("windows", "primaryColor")
     self.titleColor = configs.get("windows", "primaryTextColor")
+    self.minWidth = manifest.window.min_width or 15
+    self.minHeight = manifest.window.min_height or 6
+
     -- Create the window frame
     self.appFrame = desktop.frame:addFrame()
     self.appFrame:setPosition(3, 3) -- Maybe center it later
@@ -180,18 +197,19 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
 
     local frameCanvas = self.appFrame:getCanvas()
 
-    frameCanvas:addCommand(function(_self) -- Border for Frame:
+    frameCanvas:addCommand(function(_self)
         local width, height = _self.get("width"), _self.get("height")
         local bg = _self.get("background")
         local borderColor = _self.focused and self.focusColor or self.primaryColor
 
-        _self:textFg(1, height, ("\131"):rep(width), borderColor)
+        _self:blit(1, height, ("\143"):rep(width), colorHex[bg]:rep(width), colorHex[borderColor]:rep(width))
         for i = 1, height-1 do
             _self:blit(1, i, ("\149"), colorHex[borderColor], colorHex[bg])
             _self:blit(width, i, ("\149"), colorHex[bg], colorHex[borderColor])
         end
+        _self:blit(1, height, "\138", colorHex[bg], colorHex[borderColor])
+        _self:blit(width, height, "\133", colorHex[bg], colorHex[borderColor])
     end)
-
 
     self.titleBar = self.appFrame:addVisualElement()
     :setSize("{parent.width}", 1)
@@ -247,13 +265,13 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
                 local dy = y - (self.startY or y)
 
                 if self.resizeEdge == "right" or self.resizeEdge == "corner" then
-                    local newWidth = math.max(10, self.startW + dx)
+                    local newWidth = math.max(self.minWidth, self.startW + dx)
                     element.set("width", newWidth)
                     self.program.set("width", newWidth-2)
                 end
 
                 if self.resizeEdge == "bottom" or self.resizeEdge == "corner" then
-                    local newHeight = math.max(5, self.startH + dy)
+                    local newHeight = math.max(self.minHeight, self.startH + dy)
                     element.set("height", newHeight)
                     self.program.set("height", newHeight-2)
                 end

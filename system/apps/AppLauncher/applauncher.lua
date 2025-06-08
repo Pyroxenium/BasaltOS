@@ -1,10 +1,12 @@
 local basalt = require("basalt")
 local BasaltOS = require("basaltos")
+local utils = require("utils")
+local path = require("path")
 
 local main = basalt.getMainFrame()
 local theme = BasaltOS.getTheme()
 local searchTerm = ""
-local selectedCategory = "All"
+local selectedCategory = "Installed"
 
 main:setBackground(theme.primaryColor)
 BasaltOS.setAppFrameColor(theme.primaryColor)
@@ -22,133 +24,108 @@ BasaltOS.setMenu({
         end
     },
     ["View"] = {
-        ["Show All"] = function()
-            selectedCategory = "All"
+        ["Show Installed"] = function()
+            selectedCategory = "Installed"
             updateAppGrid()
         end,
-        ["Show System"] = function()
-            selectedCategory = "System"
-            updateAppGrid()
-        end,
-        ["Show User"] = function()
-            selectedCategory = "User"
+        ["Show Available"] = function()
+            selectedCategory = "Available"
             updateAppGrid()
         end
     }
 })
 
-local header = main:addFrame({
+local topbar = main:addFrame({
     x = 1,
-    y = 2,
+    y = 1,
     width = "{parent.width}",
-    height = 3,
-    background = colors.black
-})
-
-local titleLabel = header:addLabel({
-    x = 2,
-    y = 1,
-    text = "Application Launcher",
-    foreground = theme.primaryTextColor
-})
-
-local searchLabel = header:addLabel({
-    x = 2,
-    y = 2,
-    text = "Search:",
-    foreground = theme.primaryTextColor
-})
-
-local searchInput = header:addInput({
-    x = 10,
-    y = 2,
-    width = "{parent.width - 12}",
     height = 1,
-    background = colors.white,
-    foreground = colors.black
+    background = colors.gray
 })
 
-local categoryFrame = header:addFrame({
+local installedButton = topbar:addButton({
+    text = "Installed",
+    width = 10,
+    height = 1,
     x = 2,
-    y = 3,
-    width = "{parent.width - 4}",
-    height = 1,
-    background = colors.black
-})
-
-local allButton = categoryFrame:addButton({
-    x = 1,
-    y = 1,
-    width = 6,
-    height = 1,
-    text = "All",
+    foreground = colors.white,
     background = colors.gray,
-    foreground = colors.white
 })
 
-local systemButton = categoryFrame:addButton({
-    x = 8,
-    y = 1,
-    width = 8,
+local availableButton = topbar:addButton({
+    text = "Available",
+    width = 10,
     height = 1,
-    text = "System",
-    background = colors.lightGray,
-    foreground = colors.black
+    x = 13,
+    foreground = colors.black,
+    background = colors.gray,
 })
 
-local userButton = categoryFrame:addButton({
-    x = 17,
-    y = 1,
-    width = 6,
+local searchInput = topbar:addInput({
+    x = "{parent.width - 12}",
+    width = 12,
     height = 1,
-    text = "User",
     background = colors.lightGray,
-    foreground = colors.black
+    focusedBackground = colors.white,
+    foreground = colors.black,
+    focusedForeground = colors.black,
 })
 
 local gridFrame = main:addFrame({
     x = 1,
-    y = 6,
+    y = 3,
     width = "{parent.width}",
-    height = "{parent.height - 6}",
+    height = "{parent.height - 3}",
     background = theme.primaryColor
 })
 
 local scrollbar = main:addScrollbar({
     x = "{parent.width}",
-    y = 6,
+    y = 3,
     width = 1,
-    height = "{parent.height - 6}",
+    height = "{parent.height - 3}",
     background = colors.gray,
     foreground = colors.lightGray
 })
 
 local appButtons = {}
 local apps = {}
+local availableApps = {}
 local filteredApps = {}
 
+local excludedApps = {
+    ["AppLauncher"] = true,
+    ["Edit"] = true
+}
+
 local function updateCategoryButtons()
-    allButton:setBackground(selectedCategory == "All" and colors.gray or colors.lightGray)
-    allButton:setForeground(selectedCategory == "All" and colors.white or colors.black)
+    installedButton:setBackground(selectedCategory == "Installed" and colors.black or colors.gray)
+    installedButton:setForeground(selectedCategory == "Installed" and colors.white or colors.lightGray)
 
-    systemButton:setBackground(selectedCategory == "System" and colors.gray or colors.lightGray)
-    systemButton:setForeground(selectedCategory == "System" and colors.white or colors.black)
-
-    userButton:setBackground(selectedCategory == "User" and colors.gray or colors.lightGray)
-    userButton:setForeground(selectedCategory == "User" and colors.white or colors.black)
+    availableButton:setBackground(selectedCategory == "Available" and colors.black or colors.gray)
+    availableButton:setForeground(selectedCategory == "Available" and colors.white or colors.lightGray)
 end
 
 local function filterApps()
     filteredApps = {}
     local lowerSearch = string.lower(searchTerm)
+    
+    local sourceApps = {}
+    
+    if selectedCategory == "Installed" then
+        for _, app in pairs(apps) do
+            if not excludedApps[app.manifest.name] then
+                table.insert(sourceApps, app)
+            end
+        end
+    elseif selectedCategory == "Available" then
+        sourceApps = availableApps
+    end
 
-    for _, app in pairs(apps) do
+    for _, app in ipairs(sourceApps) do
         local matchesSearch = searchTerm == "" or string.find(string.lower(app.manifest.name), lowerSearch)
-        local matchesCategory = selectedCategory == "All" or 
-                               (selectedCategory == "System" and (app.manifest.category == "system" or not app.manifest.category)) or
-                               (selectedCategory == "User" and app.manifest.category == "user")
-
-        if matchesSearch and matchesCategory then
+        
+        if matchesSearch then
             table.insert(filteredApps, app)
         end
     end
@@ -166,40 +143,66 @@ local function createAppGrid()
     end
     appButtons = {}
 
-    local cols = math.floor((gridFrame.width - 2) / 12)
+    local availableWidth = gridFrame.width + 1
+    local appCardWidth = 10
+    local spacing = 1
+    local totalCardWidth = appCardWidth + spacing
+
+    local cols = math.max(1, math.floor(availableWidth / totalCardWidth))
     local rows = math.ceil(#filteredApps / cols)
 
     for i, app in ipairs(filteredApps) do
         local col = ((i - 1) % cols) + 1
         local row = math.floor((i - 1) / cols) + 1
 
-        local x = (col - 1) * 12 + 2
-        local y = (row - 1) * 4 + 1
+        local x = (col - 1) * totalCardWidth + 1
+        local y = (row - 1) * 5 + 1  -- Changed from 4 to 5 for higher spacing
 
         local appFrame = gridFrame:addFrame({
             x = x,
             y = y,
-            width = 10,
-            height = 3,
+            width = appCardWidth,
+            height = 4,  -- Increased from 3 to 4
             background = colors.lightGray
         })
 
-        local iconLabel = appFrame:addLabel({
-            x = 5,
-            y = 1,
-            text = "[A]",
-            foreground = colors.blue
-        })
+        -- Try to load real app icon
+        local iconElement
+        if selectedCategory == "Installed" and app.manifest.icon then
+            local iconPath = path.resolve(app.manifest.icon)
+            if fs.exists(iconPath) then
+                local bimg = utils.loadBimg(iconPath)
+                if bimg then
+                    iconElement = appFrame:addImage()
+                    iconElement:setPosition(4, 1)  -- Centered position for 3x2 icon
+                    iconElement:setSize(3, 2)
+                    iconElement:setBimg(bimg)
+                end
+            end
+        end
+        
+        -- Fallback to text icon if no image icon available
+        if not iconElement then
+            iconElement = appFrame:addLabel({
+                x = 5,
+                y = 1,
+                text = selectedCategory == "Available" and "[D]" or "[A]",
+                foreground = selectedCategory == "Available" and colors.green or colors.blue
+            })
+        end
 
+        -- App name (moved down one line)
         local nameLabel = appFrame:addLabel({
             x = 1,
-            y = 2,
+            y = 3,  -- Changed from 2 to 3
             text = string.sub(app.manifest.name, 1, 8),
             foreground = colors.black
         })
 
         appFrame:onClick(function()
-            BasaltOS.openApp(app.manifest.name)
+            if selectedCategory == "Installed" then
+                BasaltOS.openApp(app.manifest.name)
+            end
         end)
 
         table.insert(appButtons, {
@@ -208,7 +211,7 @@ local function createAppGrid()
         })
     end
 
-    local maxScroll = math.max(0, rows * 4 - gridFrame.height + 1)
+    local maxScroll = math.max(0, rows * 5 - gridFrame.height + 1)  -- Changed from 4 to 5
     scrollbar:setMax(maxScroll)
 end
 
@@ -216,10 +219,33 @@ function updateAppGrid()
     updateCategoryButtons()
     filterApps()
     createAppGrid()
+
+    local resultText = #filteredApps .. " " .. string.lower(selectedCategory) .. " apps"
+    if searchTerm ~= "" then
+        resultText = resultText .. " (filtered)"
+    end
+end
+
+-- Future function for loading available apps from GitHub
+local function loadAvailableApps()
+    -- TODO: Implement GitHub repository fetching
+    -- This will download a config file from a GitHub repo
+    -- and populate availableApps with downloadable apps
+    availableApps = {
+        -- Placeholder for future downloadable apps
+        -- {
+        --     manifest = {
+        --         name = "Calculator",
+        --         description = "Simple calculator app",
+        --         version = "1.0.0"
+        --     }
+        -- }
+    }
 end
 
 function refreshApps()
     apps = BasaltOS.getApps()
+    loadAvailableApps()
     updateAppGrid()
 end
 
@@ -236,24 +262,27 @@ searchInput:onKey(function(self, key)
     end
 end)
 
-allButton:onClick(function()
-    selectedCategory = "All"
+installedButton:onClick(function()
+    selectedCategory = "Installed"
     updateAppGrid()
 end)
 
-systemButton:onClick(function()
-    selectedCategory = "System"
-    updateAppGrid()
-end)
-
-userButton:onClick(function()
-    selectedCategory = "User"
+availableButton:onClick(function()
+    selectedCategory = "Available"
     updateAppGrid()
 end)
 
 scrollbar:onChange("value", function()
     local offset = scrollbar:getValue()
     gridFrame:setScrollOffset(0, -offset)
+end)
+
+main:observe("width", function()
+    createAppGrid()
+end)
+
+main:observe("height", function()
+    createAppGrid()
 end)
 
 main:onKey(function(self, key)

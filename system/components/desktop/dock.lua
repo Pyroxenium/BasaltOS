@@ -62,13 +62,15 @@ function icon:openContextMenu()
         local borderColor = configs.get("windows", "primaryColor")
 
         _self:textFg(1, 1, ("\131"):rep(width), borderColor)
-        _self:textFg(1, height, ("\131"):rep(width), borderColor)
+        _self:blit(1, height, ("\143"):rep(width), colorHex[bg]:rep(width), colorHex[borderColor]:rep(width))
         for i = 1, height-1 do
             _self:blit(1, i, ("\149"), colorHex[borderColor], colorHex[bg])
             _self:blit(width, i, ("\149"), colorHex[bg], colorHex[borderColor])
         end
         _self:blit(1, 1, "\151", colorHex[borderColor], colorHex[bg])
         _self:blit(width, 1, "\148", colorHex[bg], colorHex[borderColor])
+        _self:blit(1, height, "\138", colorHex[bg], colorHex[borderColor])
+        _self:blit(width, height, "\133", colorHex[bg], colorHex[borderColor])
     end)
 
     local menuItems = {}
@@ -78,6 +80,14 @@ function icon:openContextMenu()
             text = "Unpin",
             action = function()
                 self:setPinned(false)
+                menu:destroy()
+                -- Force remove if no process is running
+                if not self.process then
+                    if self.iconElement then
+                        self.iconElement:destroy()
+                    end
+                    self.dock:removeIcon(self)
+                end
             end
         })
     else
@@ -118,7 +128,9 @@ function icon:openContextMenu()
         menuButton:setForeground(colors.black)
         menuButton:onClick(function()
             item.action()
-            menu:destroy()
+            if item.text ~= "Unpin" then -- Unpin handles its own menu closing
+                menu:destroy()
+            end
         end)
     end
 
@@ -131,7 +143,7 @@ function icon:openContextMenu()
 
     local xOffset = self.iconElement.x - 1
     local yOffset = self.dock.frame:getY() - 3 - #menuItems
-    menu:setHeight(#menuItems + 3)
+    menu:setHeight(#menuItems + 2)
 
     menu:setPosition(xOffset, yOffset)
     menu:setFocused(true)

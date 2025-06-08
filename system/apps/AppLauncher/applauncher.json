@@ -4,9 +4,12 @@
     "author": "System",
     "description": "Application launcher",
     "executable": "{system}/apps/AppLauncher/applauncher.lua",
+    "icon": "{assets}/icons/applauncher.bimg",
     "window": {
-        "width": 30,
+        "width": 38,
         "height": 15,
+        "min_width": 38,
+        "min_height": 10,
         "resizable": true,
         "title": "AppLauncher"
     }

@@ -20,31 +20,44 @@ local searchInput, updateList
 
 local topbar = main:addFrame({
     x = 1,
-    y = 2,
+    y = 1,
     width = "{parent.width}",
     height = 1,
-    background = colors.black
+    background = colors.gray
 })
 
-local backButton = topbar:addLabel({
-    text = "<",
+local backButton = topbar:addButton({
+    text = "\27",
+    width = 1,
     height = 1,
-    foreground = theme.primaryTextColor
+    foreground = theme.primaryTextColor,
+    background = colors.gray,
 })
 
-local nextButton = topbar:addLabel({
-    text = ">",
+local nextButton = topbar:addButton({
+    text = "\26",
+    width = 1,
     height = 1,
     x = 3,
-    foreground = theme.primaryTextColor
+    foreground = theme.primaryTextColor,
+    background = colors.gray,
+})
+
+local homeButton = topbar:addButton({
+    text = "\1",
+    width = 1,
+    height = 1,
+    x = 5,
+    foreground = theme.primaryTextColor,
+    background = colors.gray,
 })
 
 local breadcrumbFrame = topbar:addFrame({
-    x = 5,
+    x = 7,
     y = 1,
-    width = "{parent.width - 6}",
+    width = "{parent.width - 14}",
     height = 1,
-    background = colors.black
+    background = colors.gray
 })
 
 local pathSegments = {}
@@ -59,9 +72,8 @@ local function createBreadcrumbs()
 
     local segments = {}
     if path == "" or path == "/" then
-        table.insert(segments, {name = "root", fullPath = ""})
+        -- Don't add any segments for root
     else
-        table.insert(segments, {name = "root", fullPath = ""})
         local currentPath = ""
         for segment in path:gmatch("[^/]+") do
             currentPath = currentPath .. "/" .. segment
@@ -87,7 +99,7 @@ local function createBreadcrumbs()
         local ellipsisLabel = breadcrumbFrame:addLabel()
         ellipsisLabel:setPosition(1, 1)
         ellipsisLabel:setText("...")
-        ellipsisLabel:setForeground(colors.lightGray)
+        ellipsisLabel:setForeground(colors.gray)
 
         table.insert(pathSegments, {
             element = ellipsisLabel,
@@ -100,7 +112,7 @@ local function createBreadcrumbs()
         segmentButton:setPosition(currentX, 1)
         segmentButton:setSize(#segment.name + 2, 1)
         segmentButton:setText(segment.name)
-        segmentButton:setBackground(colors.black)
+        segmentButton:setBackground(colors.gray)
         segmentButton:setForeground(theme.primaryTextColor)
 
         segmentButton:onClick(function()
@@ -139,6 +151,10 @@ local function createBreadcrumbs()
     end
 end
 
+main:observe("width", function()
+    createBreadcrumbs()
+end)
+
 local pathLabel = topbar:addLabel({
     text = path,
     x = 5,
@@ -146,41 +162,28 @@ local pathLabel = topbar:addLabel({
     foreground = theme.primaryTextColor
 })
 
-local searchFrame = main:addFrame({
-    x = 1,
-    y = 3,
-    width = "{parent.width}",
+searchInput = topbar:addInput({
+    x = "{parent.width - 7}",
+    width = 8,
     height = 1,
-    background = colors.black
-})
-
-local searchLabel = searchFrame:addLabel({
-    text = "Search:",
-    x = 1,
-    height = 1,
-    foreground = theme.primaryTextColor
-})
-
-searchInput = searchFrame:addInput({
-    x = 9,
-    width = "{parent.width - 10}",
-    height = 1,
-    background = colors.white,
-    foreground = colors.black
+    background = colors.lightGray,
+    focusedBackground = colors.white,
+    foreground = colors.black,
+    focusedForeground = colors.black,
 })
 
 local fList = main:addTable({
     x = 1,
-    y = 5,
+    y = 3,
     width = "{parent.width-1}",
-    height = "{parent.height-5}",
+    height = "{parent.height-2}",
 })
 
 local scrollbar = main:addScrollbar({
     x = "{parent.width}",
-    y = 5,
+    y = 3,
     width = 1,
-    height = "{parent.height-5}",
+    height = "{parent.height-2}",
 })
 
 fList:setColumns({{name="Name",width=12}, {name="Type",width=10}, {name="Size",width=7}})
@@ -275,6 +278,18 @@ nextButton:onClickUp(function()
     if #nextHistory > 0 then
         table.insert(backHistory, path)
         path = table.remove(nextHistory)
+        searchInput:setText("")
+        searchTerm = ""
+        updateList()
+    end
+end)
+
+-- Home button functionality
+homeButton:onClickUp(function()
+    if path ~= "" then
+        table.insert(backHistory, path)
+        nextHistory = {}
+        path = ""
         searchInput:setText("")
         searchTerm = ""
         updateList()
