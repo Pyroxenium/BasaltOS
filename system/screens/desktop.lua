@@ -2,6 +2,7 @@ local basalt = require("libraries.public.basalt")
 local dockComponent = require("components/desktop/dock")
 local menubarComponent = require("components/desktop/menubar")
 local windowsComponent = require("components/desktop/windows")
+local notificationComponent = require("components/desktop/notifications")
 local config = require("libraries.private.configs")
 local processManager = require("libraries.private.processManager")
 
@@ -19,6 +20,7 @@ function desktop.new(id)
     self.dock = dockComponent.new(self)
     self.menubar = menubarComponent.new(self)
     self.windowManager = windowsComponent.new(self)
+    self.notifications = notificationComponent.new(self)
 
     self.frame:onClick(function()
         self.menubar.curWindow = nil
@@ -68,6 +70,16 @@ function desktop:openApp(name, ...)
         end
     else
         error("App not found: " .. name)
+    end
+end
+
+function desktop:showNotification(title, message, duration)
+    return self.notifications:show(title, message, duration)
+end
+
+function desktop:handleEvent(event)
+    if self.notifications then
+        self.notifications:handleEvent(event)
     end
 end
 

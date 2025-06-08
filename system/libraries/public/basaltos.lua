@@ -44,4 +44,16 @@ function BasaltOS.getTheme(name)
     return t
 end
 
+function BasaltOS.showNotification(title, message, duration)
+    local desktopManager = require("libraries.private.screenManager").getScreen("desktop")
+    local activeDesktop = desktopManager.getActive()
+    if activeDesktop and activeDesktop.showNotification then
+        return activeDesktop:showNotification(title, message, duration)
+    end
+end
+
+function BasaltOS.notify(message, duration)
+    return BasaltOS.showNotification("Notification", message, duration)
+end
+
 return BasaltOS

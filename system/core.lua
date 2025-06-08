@@ -41,6 +41,15 @@ end
 -- Event management
 function core.handleEvents(event)
     handleBackgroundProcess(table.unpack(event))
+    
+    -- Handle notifications
+    if desktop and desktop.getActive then
+        local activeDesktop = desktop.getActive()
+        if activeDesktop and activeDesktop.handleEvent then
+            activeDesktop:handleEvent(event)
+        end
+    end
+    
     basalt.update(table.unpack(event))
 end
 

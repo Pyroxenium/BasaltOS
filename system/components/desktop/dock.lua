@@ -78,7 +78,6 @@ function icon:openContextMenu()
             text = "Unpin",
             action = function()
                 self:setPinned(false)
-                logger.debug("Unpinned " .. self.app.manifest.name .. " from dock")
             end
         })
     else
@@ -86,7 +85,6 @@ function icon:openContextMenu()
             text = "Pin",
             action = function()
                 self:setPinned(true)
-                logger.debug("Pinned " .. self.app.manifest.name .. " to dock")
             end
         })
     end
@@ -96,7 +94,6 @@ function icon:openContextMenu()
             text = "Close",
             action = function()
                 self.process:stop()
-                logger.debug("Closed " .. self.app.manifest.name .. " from context menu")
             end
         })
     end
@@ -107,7 +104,6 @@ function icon:openContextMenu()
             action = function()
                 if self.process.window.restart then
                     self.process.window:restart()
-                    logger.debug("Restarted " .. self.app.manifest.name .. " from context menu")
                 end
             end
         })
