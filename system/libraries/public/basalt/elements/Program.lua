@@ -17,6 +17,8 @@ Program.defineProperty(Program, "path", {default = "", type = "string"})
 Program.defineProperty(Program, "running", {default = false, type = "boolean"})
 --- @property errorCallback function nil The error callback function
 Program.defineProperty(Program, "errorCallback", {default = nil, type = "function"})
+--- @property doneCallback function nil The done callback function
+Program.defineProperty(Program, "doneCallback", {default = nil, type = "function"})
 
 Program.defineEvent(Program, "*")
 
@@ -82,6 +84,10 @@ function BasaltProgram:run(path, width, height)
             local ok, result = coroutine.resume(self.coroutine)
             term.redirect(current)
             if not ok then
+                local doneCallback = self.program.get("doneCallback")
+                if doneCallback then
+                    doneCallback(self.program, ok, result)
+                end
                 local errorCallback = self.program.get("errorCallback")
                 if errorCallback then
                     local trace = debug.traceback(self.coroutine, result)
@@ -93,6 +99,14 @@ function BasaltProgram:run(path, width, height)
                 end
                 errorManager.header = "Basalt Program Error ".. path
                 errorManager.error(result)
+            end
+            if coroutine.status(self.coroutine)=="dead" then
+                self.program.set("running", false)
+                self.program.set("program", nil)
+                local doneCallback = self.program.get("doneCallback")
+                if doneCallback then
+                    doneCallback(self.program, ok, result)
+                end
             end
         else
             errorManager.header = "Basalt Program Error ".. path
@@ -128,7 +142,19 @@ function BasaltProgram:resume(event, ...)
 
     if ok then
         self.filter = result
+        if coroutine.status(self.coroutine)=="dead" then
+            self.program.set("running", false)
+            self.program.set("program", nil)
+            local doneCallback = self.program.get("doneCallback")
+            if doneCallback then
+                doneCallback(self.program, ok, result)
+            end
+        end
     else
+        local doneCallback = self.program.get("doneCallback")
+        if doneCallback then
+            doneCallback(self.program, ok, result)
+        end
         local errorCallback = self.program.get("errorCallback")
         if errorCallback then
             local trace = debug.traceback(self.coroutine, result)
@@ -232,6 +258,15 @@ end
 --- @return Program self The Program instance
 function Program:onError(fn)
     self.set("errorCallback", fn)
+    return self
+end
+
+--- Registers a callback for the program's done event
+--- @shortDescription Registers a callback for the program's done event
+--- @param fn function The callback function to register
+--- @return Program self The Program instance
+function Program:onDone(fn)
+    self.set("doneCallback", fn)
     return self
 end
 

@@ -1,4 +1,5 @@
 local BasaltOS = require("basaltos")
+local clipboard = require("clipboard")
 local basalt = require("basalt")
 basalt.LOGGER.setEnabled(true)
 basalt.LOGGER.setLogToFile(true)
@@ -12,6 +13,26 @@ local searchTerm = ""
 local lastClickTime = 0
 local lastClickedItem = nil
 local DOUBLE_CLICK_TIME = 0.5 -- double click in seconds
+
+local function findAvailableName(targetDir, originalName)
+    local baseName, extension = originalName:match("^(.-)%.([^%.]+)$")
+    if not baseName then
+        baseName = originalName
+        extension = ""
+    else
+        extension = "." .. extension
+    end
+
+    local counter = 1
+    local newName = originalName
+
+    while fs.exists(fs.combine(targetDir, newName)) do
+        newName = baseName .. "(" .. counter .. ")" .. extension
+        counter = counter + 1
+    end
+
+    return newName
+end
 
 main:setBackground(theme.primaryColor)
 BasaltOS.setAppFrameColor(theme.primaryColor)
@@ -239,26 +260,223 @@ searchInput:onChange("text", function()
     updateList()
 end)
 
+local function createContextMenu(x, y, fileName, filePath)
+    local isDirectory = fs.isDir(filePath)
+    local menuItems = {}
+
+    if isDirectory then
+        table.insert(menuItems, {
+            text = "Open",
+            action = function()
+                table.insert(backHistory, path)
+                nextHistory = {}
+                path = filePath
+                searchInput:setText("")
+                searchTerm = ""
+                updateList()
+            end
+        })
+        table.insert(menuItems, {
+            text = "New File",
+            action = function()
+                -- Erstelle neue Datei im Ordner
+                local newFileName = "new_file.txt"
+                local newFilePath = filePath .. "/" .. newFileName
+                local file = fs.open(newFilePath, "w")
+                if file then
+                    file.close()
+                    updateList()
+                end
+            end
+        })
+        table.insert(menuItems, {
+            text = "New Folder", 
+            action = function()
+                -- Erstelle neuen Ordner
+                local newFolderName = "new_folder"
+                local newFolderPath = filePath .. "/" .. newFolderName
+                fs.makeDir(newFolderPath)
+                updateList()
+            end
+        })
+    else
+        table.insert(menuItems, {
+            text = "Open",
+            action = function()
+                BasaltOS.openApp("Edit", filePath)
+            end
+        })
+        table.insert(menuItems, {
+            text = "Edit",
+            action = function()
+                BasaltOS.openApp("Edit", filePath)
+            end
+        })
+    end    table.insert(menuItems, {
+        text = "Copy",
+        action = function()
+            clipboard.copyFile(filePath, fileName)
+        end
+    })
+
+    table.insert(menuItems, {
+        text = "Rename",
+        action = function()
+            BasaltOS.inputDialog("Rename File", "Enter new name:", fileName, function(newName)
+                if newName and newName ~= "" and newName ~= fileName then
+                    fs.move(filePath, path .. "/" .. newName)
+                    updateList()
+                end
+            end)
+        end
+    })    table.insert(menuItems, {
+        text = "Delete ",
+        action = function()
+            local confirmMessage = string.format("Are you sure?")
+
+            BasaltOS.confirmDialog("Delete " .. fileName, confirmMessage, function(confirmed)
+                if confirmed then
+                    fs.delete(filePath)
+                    updateList()
+                end
+            end)
+        end
+    })
+
+    table.insert(menuItems, {
+        text = "Properties",
+        action = function()
+            local size = isDirectory and "Directory" or tostring(fs.getSize(filePath)) .. " bytes"
+            local info = string.format("Name: %s\nType: %s\nSize: %s\nPath: %s", 
+                                     fileName, 
+                                     isDirectory and "Directory" or "File",
+                                     size,
+                                     filePath)
+            BasaltOS.tooltip(x, y - 5, info, {duration = 5})
+        end
+    })
+      return BasaltOS.contextMenu(x, y, menuItems, {
+        width = 12,
+        maxHeight = 12
+    })
+end
+
+local function createFolderContextMenu(x, y)
+    local menuItems = {}
+
+    table.insert(menuItems, {
+        text = "New File",
+        action = function()
+            BasaltOS.inputDialog("New File", "Enter filename:", "new_file.txt", function(fileName)
+                if fileName and fileName ~= "" then
+                    local newFilePath = path .. "/" .. fileName
+                    local file = fs.open(newFilePath, "w")
+                    if file then
+                        file.close()
+                        updateList()
+                    end
+                end
+            end)
+        end
+    })    table.insert(menuItems, {
+        text = "New Folder",
+        action = function()
+            BasaltOS.inputDialog("New Folder", "Enter folder name:", "new_folder", function(folderName)
+                if folderName and folderName ~= "" then
+                    local newFolderPath = path .. "/" .. folderName
+                    fs.makeDir(newFolderPath)
+                    updateList()
+                end
+            end)
+        end
+    })
+
+    if clipboard.hasFile() then        
+        table.insert(menuItems, {
+            text = "Paste",
+            action = function()
+                local fileInfo = clipboard.getFile()
+                if fileInfo then
+                    local availableName = findAvailableName(path, fileInfo.name)
+                    local success, error = clipboard.pasteFile(path, availableName)
+
+                    if success then
+                        updateList()
+                    else
+                        BasaltOS.notify("Error: " .. (error or "Unknown error"))
+                    end
+                end
+            end
+        })
+    end
+
+    table.insert(menuItems, {
+        text = "--------",
+        action = function() end
+    })
+
+    table.insert(menuItems, {
+        text = "Refresh",
+        action = function()
+            updateList()
+        end
+    })
+
+    table.insert(menuItems, {
+        text = "Properties",
+        action = function()
+            local itemCount = 0
+            local files = fs.list(path)
+            if files then
+                itemCount = #files
+            end
+
+            local info = string.format("Path: %s\nType: Directory\nItems: %d", 
+                                     path,
+                                     itemCount)
+            BasaltOS.createDialog({
+                title = "Folder Properties",
+                message = info,
+                buttons = {{text = "OK", action = function() end}}
+            })
+        end
+    })
+      return BasaltOS.contextMenu(x, y, menuItems, {
+        width = 12,
+        maxHeight = 8
+    })
+end
+
 updateList()
 
 fList:onClickUp(function(self, btn, x, y)
-    if self.focused and btn == 1 then
+    if self.focused then
         local selected = self:getData()[y-1+self.scrollOffset]
         if selected then
             local fileName = selected[1]
+            local filePath = path .. "/" .. fileName
 
-            if isDoubleClick(fileName) then
-                local filePath = path .. "/" .. fileName
-                if fs.isDir(filePath) then
-                    table.insert(backHistory, path)
-                    nextHistory = {}
-                    path = filePath
-                    searchInput:setText("")
-                    searchTerm = ""
-                    updateList()
-                else
-                    BasaltOS.openApp("Edit", filePath)
+            if btn == 1 then
+                if isDoubleClick(fileName) then
+                    if fs.isDir(filePath) then
+                        table.insert(backHistory, path)
+                        nextHistory = {}
+                        path = filePath
+                        searchInput:setText("")
+                        searchTerm = ""
+                        updateList()
+                    else
+                        BasaltOS.openApp("Edit", filePath)
+                    end
                 end
+            elseif btn == 2 then
+                local winX, winY = BasaltOS.getWindowPosition()
+                createContextMenu(winX + x, winY + y + 2, fileName, filePath)
+            end
+        else
+            if btn == 2 then
+                local winX, winY = BasaltOS.getWindowPosition()
+                createFolderContextMenu(winX + x, winY + y + 2)
             end
         end
     end
@@ -284,7 +502,6 @@ nextButton:onClickUp(function()
     end
 end)
 
--- Home button functionality
 homeButton:onClickUp(function()
     if path ~= "" then
         table.insert(backHistory, path)

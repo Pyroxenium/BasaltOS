@@ -1,6 +1,6 @@
 local utils = require("libraries.public.utils")
 local path = require("libraries.public.path")
-local logger = require("libraries.private.log")
+local logger = require("libraries.public.logger")
 local colorHex = require("libraries.public.utils").tHex
 local configs = require("libraries.private.configs")
 

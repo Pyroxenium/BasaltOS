@@ -1,4 +1,6 @@
 local basalt = require("basalt")
+basalt.LOGGER.setEnabled(true)
+basalt.LOGGER.setLogToFile(true)
 local BasaltOS = require("basaltos")
 local utils = require("utils")
 local path = require("path")
@@ -13,7 +15,6 @@ BasaltOS.setAppFrameColor(theme.primaryColor)
 
 local updateAppGrid, refreshApps
 
-BasaltOS.setTitle("App Launcher")
 BasaltOS.setMenu({
     ["File"] = {
         ["Refresh Apps"] = function()
@@ -109,9 +110,9 @@ end
 local function filterApps()
     filteredApps = {}
     local lowerSearch = string.lower(searchTerm)
-    
+
     local sourceApps = {}
-    
+
     if selectedCategory == "Installed" then
         for _, app in pairs(apps) do
             if not excludedApps[app.manifest.name] then
@@ -124,7 +125,7 @@ local function filterApps()
 
     for _, app in ipairs(sourceApps) do
         local matchesSearch = searchTerm == "" or string.find(string.lower(app.manifest.name), lowerSearch)
-        
+
         if matchesSearch then
             table.insert(filteredApps, app)
         end
@@ -144,7 +145,7 @@ local function createAppGrid()
     appButtons = {}
 
     local availableWidth = gridFrame.width + 1
-    local appCardWidth = 10
+    local appCardWidth = 11
     local spacing = 1
     local totalCardWidth = appCardWidth + spacing
 
@@ -156,32 +157,44 @@ local function createAppGrid()
         local row = math.floor((i - 1) / cols) + 1
 
         local x = (col - 1) * totalCardWidth + 1
-        local y = (row - 1) * 5 + 1  -- Changed from 4 to 5 for higher spacing
+        local y = (row - 1) * 6 + 1
 
         local appFrame = gridFrame:addFrame({
             x = x,
             y = y,
             width = appCardWidth,
-            height = 4,  -- Increased from 3 to 4
-            background = colors.lightGray
+            height = 5,
+            background = colors.black
         })
 
-        -- Try to load real app icon
         local iconElement
-        if selectedCategory == "Installed" and app.manifest.icon then
-            local iconPath = path.resolve(app.manifest.icon)
+        local launchIcon = false
+        local iconPath = ""
+        if app.manifest.launchIcon then 
+            iconPath = path.resolve(app.manifest.launchIcon)
             if fs.exists(iconPath) then
+                launchIcon = true
+            end
+        else
+            iconPath = app.manifest.icon and path.resolve(app.manifest.icon) or ""
+        end
+        if selectedCategory == "Installed" then
+            if iconPath ~= "" then
                 local bimg = utils.loadBimg(iconPath)
                 if bimg then
                     iconElement = appFrame:addImage()
-                    iconElement:setPosition(4, 1)  -- Centered position for 3x2 icon
-                    iconElement:setSize(3, 2)
+                    if launchIcon then 
+                        iconElement:setPosition(1, 1)
+                        iconElement:setSize(appCardWidth, 4)
+                    else
+                        iconElement:setPosition(5, 2)
+                        iconElement:setSize(3, 2)
+                    end
                     iconElement:setBimg(bimg)
                 end
             end
         end
-        
-        -- Fallback to text icon if no image icon available
+
         if not iconElement then
             iconElement = appFrame:addLabel({
                 x = 5,
@@ -191,11 +204,19 @@ local function createAppGrid()
             })
         end
 
-        -- App name (moved down one line)
-        local nameLabel = appFrame:addLabel({
+        local labelBg = appFrame:addVisualElement({
             x = 1,
-            y = 3,  -- Changed from 2 to 3
-            text = string.sub(app.manifest.name, 1, 8),
+            y = 5,
+            width = appCardWidth,
+            height = 1,
+            background = colors.lightGray
+        })
+
+        local name = string.sub(app.manifest.name, 1, 8)
+        local nameLabel = appFrame:addLabel({
+            x = math.floor(appCardWidth / 2 - #name / 2 + 0.5),
+            y = 5,
+            text = name,
             foreground = colors.black
         })
 

@@ -35,6 +35,12 @@ local function generateBasaltOS(process)
     osAPI.getAppPath = function()
         return path.resolve(getDir(process))
     end
+    osAPI.getWindowPosition = function()
+        if process.window then
+            local frame = process.window.appFrame
+            return frame.x, frame.y, frame.width, frame.height
+        end
+    end
     osAPI.getAppName = function()
         return process.app.manifest.name
     end
@@ -92,9 +98,14 @@ local function createEnvironment(process) -- TODO: Create multishell wrapper for
     local env = setmetatable({}, {__index=_ENV})
     env.shell = shell
     env.require, env.package = make_package(env, fs.getDir(dir))
-    env.package.path = path.resolve(libs)..env.package.path
+    local dir = fs.getDir(path.resolve(process.app.manifest.executable))
+    local appPath = format:gsub("path", dir)
+    env.package.path = appPath..path.resolve(libs)..env.package.path
     env.package.preload.basaltos = function()
         return generateBasaltOS(process)
+    end
+    env.package.preload.path = function()
+        return path
     end
     return env
 end
@@ -369,7 +380,7 @@ function osWindow:maximize()
     self.oldX = self.appFrame.x
     self.oldY = self.appFrame.y
     self.appFrame:setSize(self.desktop.frame.width, self.desktop.frame.height-2)
-    self.program:setSize(self.appFrame.width-2, self.appFrame.height-2)
+    self.program:setSize(self.appFrame.width-3, self.appFrame.height-2)
     self.appFrame:setPosition(1, 2)
     self.status = "maximized"
 end

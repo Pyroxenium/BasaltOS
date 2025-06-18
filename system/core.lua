@@ -16,7 +16,7 @@ local core = {
     version = "1.0.0",
     name = "Basalt OS Template",
     isRunning = false,
-    LOGGER = require("libraries.private.log")
+    LOGGER = require("libraries.public.logger")
 }
 
 local function handleBackgroundProcess(event, ...)
@@ -81,6 +81,8 @@ function core.init()
     appManager.registerApp("{system}/apps/Edit/edit")
     appManager.registerApp("{system}/apps/Worm/worm")
     appManager.registerApp("{system}/apps/AppLauncher/applauncher")
+    appManager.registerApp("{system}/apps/PineStore/pinestore")
+    appManager.registerApp("{system}/apps/AppInstaller/appinstaller")
 
     --core.switchScreen("login")
 

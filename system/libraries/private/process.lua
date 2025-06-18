@@ -27,7 +27,8 @@ function process:run(...)
         self.status = "running"
         if not self.window then
             self.window = self.desktop.windowManager:createWindow(self)
-            self.window:setTitle(self.app.manifest.name)
+            local title = self.app.manifest.window and (self.app.manifest.window.title or self.app.manifest.name) or self.app.manifest.name or "Undefined"
+            self.window:setTitle(title)
             self.window:run(...)
 
             local iconImg = self.app.manifest.icon

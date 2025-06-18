@@ -1,16 +1,16 @@
 {
-    "name": "AppLauncher",
+    "name": "PineStore",
     "version": "1.0.0",
     "author": "System",
     "description": "Application launcher",
-    "executable": "{system}/apps/AppLauncher/applauncher.lua",
+    "executable": "{system}/apps/PineStore/pinestore.lua",
     "icon": "{assets}/icons/applauncher.bimg",
     "window": {
         "width": 37,
-        "height": 16,
+        "height": 15,
         "min_width": 37,
         "min_height": 10,
         "resizable": true,
-        "title": "App Launcher"
+        "title": "Pine Store"
     }
 }

@@ -102,6 +102,14 @@ end
 function Container:init(props, basalt)
     VisualElement.init(self, props, basalt)
     self.set("type", "Container")
+    self:observe("width", function()
+        self.set("childrenSorted", false)
+        self.set("childrenEventsSorted", false)
+    end)
+    self:observe("height", function()
+        self.set("childrenSorted", false)
+        self.set("childrenEventsSorted", false)
+    end)
 end
 
 --- Returns whether a child is visible
@@ -680,6 +688,9 @@ end
 --- @private
 function Container:destroy()
     if not self:isType("BaseFrame") then
+        for _, child in ipairs(self.get("children")) do
+            child:destroy()
+        end
         self.set("childrenSorted", false)
         VisualElement.destroy(self)
         return self

@@ -4,6 +4,7 @@
     "author": "System",
     "description": "Worm",
     "executable": "rom/programs/fun/worm.lua",
+    "icon": "{assets}/icons/worm.bimg",
     "window": {
         "width": 40,
         "height": 18,

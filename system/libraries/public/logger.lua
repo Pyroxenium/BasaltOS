@@ -1,5 +1,5 @@
 --- Logger module for OS. Logs messages to the console and optionally to a file.
---- @class Log
+--- @class Logger
 --- @field _logs table The complete log history
 --- @field _enabled boolean If the logger is enabled
 --- @field _logToFile boolean If the logger should log to a file

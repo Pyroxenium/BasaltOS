@@ -1,0 +1,16 @@
+{
+    "name": "AppInstaller",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "Convert .lua files to BasaltOS applications",
+    "executable": "{system}/apps/AppInstaller/appinstaller.lua",
+    "icon": "{assets}/icons/default.bimg",
+    "window": {
+        "width": 25,
+        "height": 15,
+        "min_width": 25,
+        "min_height": 15,
+        "resizable": true,
+        "title": "App Installer"
+    }
+}
