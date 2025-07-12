@@ -20,7 +20,6 @@ end
 function processManager.remove(pid)
     local proc = processManager.get(pid)
     if proc then
-        -- Clean up dock icon if it exists
         if proc.dockIcon then
             proc.dockIcon:remove()
         end
@@ -37,6 +36,40 @@ function processManager.findByName(name)
         end
     end
     return processes
+end
+
+function processManager.getFocus()
+    for _, proc in pairs(processManager.processes) do
+        if proc.window and proc.window.isFocused() then
+            return proc
+        end
+    end
+    return nil
+end
+
+function processManager.setFocus(pid)
+    local proc = processManager.get(pid)
+    if proc and proc.window then
+        proc.window:focus()
+        return true
+    end
+    return false
+end
+
+function processManager.getCurrentId()
+    local current = processManager.getFocus()
+    if current then
+        return current.id
+    end
+    return nil
+end
+
+function processManager.getCount()
+    local count = 0
+    for _ in pairs(processManager.processes) do
+        count = count + 1
+    end
+    return count
 end
 
 function processManager.getAll()

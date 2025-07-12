@@ -2,6 +2,8 @@ local configs = require("libraries.private.configs")
 local path = require("libraries.public.path")
 local colorHex = require("libraries.public.utils").tHex
 local deepCopy = require("libraries.public.utils").deepCopy
+local logger = require("libraries.public.logger")
+local dialog = require("libraries.private.os.dialog")
 
 local windowManager = {}
 windowManager.__index = windowManager
@@ -118,13 +120,37 @@ local function createFullscreen(self, process, desktop) -- FULLSCREEN VERSION
     self.appFrame:setPosition(1, 1)
     self.appFrame:setSize(desktop.frame.width, desktop.frame.height)
 
-    self.program = self.appFrame:addProgram({y=1, x=1, width=self.appFrame.width, height=self.appFrame.height-1, background=colors.black})
-    self.program:observe("width", function(self, width)
-        self.appFrame.set("width", width)
-    end)
-    self.program:observe("height", function(self, height)
-        self.appFrame.set("height", height)
-    end)
+    self.program = self.appFrame:addProgram({y=1, x=1, width=desktop.frame.width, height=desktop.frame.height-1, background=colors.black})
+
+    local performance = configs.get("system", "performance")
+    self.appFrame:setVisible(true)
+
+    --[[if not performance then
+        self.appFrame:setSize(2, 2)
+        self.appFrame:setPosition(math.floor(desktop.frame.width / 2 - 1), math.floor(desktop.frame.height / 2 - 1))
+
+        self.appFrame:animate()
+            :move(1, 1, 0.25)
+            :resize(desktop.frame.width, desktop.frame.height, 0.25)
+            :onComplete(function()
+                self.program:observe("width", function(self, width)
+                    self.appFrame.set("width", width)
+                end)
+                self.program:observe("height", function(self, height)
+                    self.appFrame.set("height", height)
+                end)
+            end)
+            :start()
+
+        self.program:setSize(self.appFrame.width - 2, self.appFrame.height - 2)
+    else]]
+        self.program:observe("width", function(self, width)
+            self.appFrame.set("width", width)
+        end)
+        self.program:observe("height", function(self, height)
+            self.appFrame.set("height", height)
+        end)
+    --end
 
     -- Close button
     self.appFrame:addLabel({x=2, text="[Close]", foreground=colors.red, y="{parent.height}"}):onClick(function()
@@ -167,35 +193,71 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
     self.titleColor = configs.get("windows", "primaryTextColor")
     self.minWidth = manifest.window.min_width or 15
     self.minHeight = manifest.window.min_height or 6
+    self.width = manifest.window.width or 30
+    self.height = manifest.window.height or 12
+    self.x = manifest.window.x or math.floor(desktop.frame.width / 2 - self.width / 2)
+    self.y = manifest.window.y or math.floor(desktop.frame.height / 2 - self.height / 2)
 
     -- Create the window frame
-    self.appFrame = desktop.frame:addFrame()
-    self.appFrame:setPosition(3, 3) -- Maybe center it later
-    self.appFrame:setSize(manifest.window.width or 30, manifest.window.height or 12)
-    self.appFrame:setBackgroundEnabled(false)
-    self.appFrame:setDraggable(true)
+    self.appFrame = desktop.frame:addFrame({
+        visible = false,
+        x = self.x,
+        y = self.y,
+        backgroundEnabled = false,
+        draggable = true,
+        width = self.width,
+        height = self.height,
+    })
+
     self.title = self.appFrame:addLabel({x= "{parent.width / 2 - #self.text/2}", y=1})
 
     self.program = self.appFrame:addProgram({y=2, x=2, width=self.appFrame.width-2, height=self.appFrame.height-2, background=colors.black})
 
+    local performance = configs.get("system", "performance")
+
+    self.appFrame:setVisible(true)
+    if not performance then
+        local centerX = self.x + math.floor(self.width / 2) - 1
+        local centerY = self.y + math.floor(self.height / 2) - 1
+
+        self.appFrame:setSize(2, 2)
+        self.appFrame:setPosition(centerX, centerY)
+
+        self.appFrame:animate()
+            :move(self.x, self.y, 0.25)
+            :resize(self.width, self.height, 0.25)
+            :start()
+
+        self.program:setSize(self.width - 2, self.height - 2)
+    end
+
     local dragMap = self.appFrame.get("draggingMap")
     dragMap[1] = {x=5, y=1, width="width", height=1}
+
+    self.program:onError(function(self, err)
+        dialog.error("Application Runtime", err)
+        return false
+    end)
+
+    self.program:onDone(function()
+        self.process:stop()
+    end)
 
     -- Close button
     self.appFrame:addLabel({text="\7", foreground=colors.red}):onClick(function()
         self.process:stop()
     end)
-    -- Restart button (Placeholder for now)
+    --[[ Restart button (Placeholder for now)
     self.appFrame:addLabel({text="\7", foreground=colors.purple, x=2}):onClick(function()
         self:restart()
-    end)
+    end)]]
     -- Minimize button
-    self.appFrame:addLabel({text="\7", foreground=colors.yellow, x=3}):onClick(function()
+    self.appFrame:addLabel({text="\7", foreground=colors.yellow, x=2}):onClick(function()
         self.process:minimize()
     end)
     if manifest.window.resizable then
         -- Maximize button
-        self.appFrame:addLabel({text="\7", foreground=colors.green, x=4}):onClick(function()
+        self.appFrame:addLabel({text="\7", foreground=colors.green, x=3}):onClick(function()
             if self.status == "maximized" then
                 self:restoreSize()
                 self.status = "restored"
@@ -279,12 +341,14 @@ local function createWindow(self, process, desktop) -- WINDOWED VERSION
                     local newWidth = math.max(self.minWidth, self.startW + dx)
                     element.set("width", newWidth)
                     self.program.set("width", newWidth-2)
+                    self.width = newWidth
                 end
 
                 if self.resizeEdge == "bottom" or self.resizeEdge == "corner" then
                     local newHeight = math.max(self.minHeight, self.startH + dy)
                     element.set("height", newHeight)
                     self.program.set("height", newHeight-2)
+                    self.height = newHeight
                 end
             end
         end)
@@ -339,7 +403,11 @@ function osWindow:run(...)
                     local appPath = path.resolve(self.process.app.manifest.executable)
                     if fs.exists(appPath) then
                         self.program:execute(appPath, createEnvironment(self.process), nil, ...)
+                    else
+                        dialog.error("Manifest Error", "Executable not found: " .. appPath)
                     end
+                else
+                    dialog.error("Manifest Error", "Executable not specified in manifest")
                 end
             end
         end
@@ -348,8 +416,21 @@ end
 
 function osWindow:close()
     if self.appFrame then
-        self.appFrame:destroy()
-        self.appFrame = nil
+        local appFrame = self.appFrame
+        local performance = configs.get("system", "performance")
+        if not performance and appFrame:getVisible() then
+            appFrame:animate()
+                :move(math.floor(appFrame.x + appFrame.width / 2), math.floor(appFrame.y + appFrame.height / 2), 0.25)
+                :resize(1, 1, 0.25)
+                :onComplete(function()
+                    appFrame:destroy(false)
+                    self.appFrame = nil
+                end)
+                :start()
+        else
+            appFrame:destroy(false)
+            self.appFrame = nil
+        end
     end
 end
 
@@ -368,7 +449,32 @@ function osWindow:focus()
 end
 
 function osWindow:minimize()
-    self.appFrame:setVisible(false)
+    local performance = configs.get("system", "performance")
+    self.x = self.appFrame.x
+    self.y = self.appFrame.y
+    self.width = self.appFrame.width
+    self.height = self.appFrame.height
+
+    if not performance and self.appFrame then
+        local targetX, targetY = math.floor(self.desktop.frame.width / 2), self.desktop.frame.height
+
+        self.beforeMinimize = {
+            width = self.appFrame.width,
+            height = self.appFrame.height,
+            x = self.appFrame.x,
+            y = self.appFrame.y
+        }
+
+        self.appFrame:animate()
+            :move(targetX, targetY, 0.25)
+            :resize(2, 1, 0.25)
+            :onComplete(function()
+                self.appFrame:setVisible(false)
+            end)
+            :start()
+    else
+        self.appFrame:setVisible(false)
+    end
 end
 
 function osWindow:maximize()
@@ -390,17 +496,37 @@ function osWindow:restoreSize()
         self.appFrame:setSize(self.oldWidth, self.oldHeight)
         self.program:setSize(self.appFrame.width-2, self.appFrame.height-2)
         self.appFrame:setPosition(self.oldX, self.oldY)
+    else
+        self.appFrame:setSize(self.width, self.height)
+        self.appFrame:setPosition(self.x, self.y)
     end
     self.status = "restored"
 end
 
 function osWindow:restore()
-    self.appFrame:setVisible(true)
-    self:focus()
-    self.appFrame:setFocused(true)
+    if self.appFrame then
+        self.appFrame:setVisible(true)
+        self:focus()
+        self.appFrame:setFocused(true)
+
+        local performance = configs.get("system", "performance")
+
+        if not performance then
+            local centerX = math.floor(self.desktop.frame.width / 2 - self.appFrame.width / 2)
+            local centerY = math.floor(self.desktop.frame.height / 2 - self.appFrame.height / 2)
+
+            self.appFrame:animate()
+                :move(self.x, self.y, 0.25)
+                :resize(self.width, self.height, 0.25)
+                :start()
+        end
+    end
 end
 
 function osWindow:getStatus()
+    if self.appFrame == nil then
+        return "closed"
+    end
     return self.appFrame:getVisible() and "maximized" or "minimized"
 end
 

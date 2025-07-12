@@ -20,6 +20,15 @@ function store.get(category, key)
     end
 end
 
+function store.remove(category, key)
+    if store.data[category] and store.data[category][key] then
+        store.data[category][key] = nil
+        store.save(category)
+        return true
+    end
+    return false
+end
+
 function store.save(category)
     if(not category) then
         for cat, _ in pairs(store.data) do

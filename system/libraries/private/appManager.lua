@@ -1,6 +1,7 @@
 local pathManager = require("libraries.public.path")
 local store = require("store")
 local desktopManager = require("libraries.private.screenManager").getScreen("desktop")
+local fileRegistry = require("libraries.private.fileRegistry")
 
 -- App API
 local app = {}
@@ -33,9 +34,47 @@ function app:pinToDock()
     return icon
 end
 
--- App Manager
 local appManager = {}
 appManager.apps = {}
+
+appManager.protectedApps = {
+    "AppLauncher",
+    "Finder", 
+    "Edit",
+    "Shell",
+    "Settings"
+}
+
+function appManager.addProtectedApp(appName)
+    if not appManager.isProtected(appName) then
+        table.insert(appManager.protectedApps, appName)
+        return true
+    end
+    return false
+end
+
+function appManager.removeProtectedApp(appName)
+    for i, name in ipairs(appManager.protectedApps) do
+        if name == appName then
+            table.remove(appManager.protectedApps, i)
+            return true
+        end
+    end
+    return false
+end
+
+function appManager.isProtected(appName)
+    for _, name in ipairs(appManager.protectedApps) do
+        if name == appName then
+            return true
+        end
+    end
+    return false
+end
+
+function appManager.getProtectedApps()
+    return appManager.protectedApps
+end
 
 function appManager.getApp(name)
     if appManager.apps[name] then
@@ -49,7 +88,91 @@ function appManager.getApps()
     return appManager.apps
 end
 
--- Path to manifest file
+function appManager.isInstalled(name)
+    return appManager.apps[name] ~= nil
+end
+
+function appManager.removeApp(appName)
+    local app = appManager.apps[appName]
+    if not app then
+        return false, "App not found: " .. appName
+    end
+
+    if appManager.isProtected(appName) then
+        return false, "Cannot remove protected app: " .. appName
+    end
+
+    local appPath = app.manifest.path
+    local appDir = appPath:match("^(.+)/[^/]+%.json$")
+
+    if not appDir then
+        return false, "Could not determine app directory for " .. appName
+    end
+
+    local success, error = pcall(function()
+        if app.manifest.fileAssociations then
+            local extensionsToRemove = {}
+
+            if app.manifest.fileAssociations.open then
+                for _, ext in ipairs(app.manifest.fileAssociations.open) do
+                    if ext ~= "__directory" then
+                        table.insert(extensionsToRemove, ext)
+                    end
+                end
+            end
+
+            if app.manifest.fileAssociations.edit then
+                for _, ext in ipairs(app.manifest.fileAssociations.edit) do
+                    if ext ~= "__directory" then
+                        local found = false
+                        for _, existing in ipairs(extensionsToRemove) do
+                            if existing == ext then
+                                found = true
+                                break
+                            end
+                        end
+                        if not found then
+                            table.insert(extensionsToRemove, ext)
+                        end
+                    end
+                end
+            end
+
+            if #extensionsToRemove > 0 then
+                fileRegistry.uninstallExtensions(extensionsToRemove)
+            end
+        end
+
+        fileRegistry.cleanupDeletedApps()
+
+        appManager.apps[appName] = nil
+        store.remove("apps", appName)
+
+        if fs.exists(appDir) then
+            fs.delete(appDir)
+        end
+    end)
+
+    if not success then
+        return false, "Failed to remove app: " .. tostring(error)
+    end
+
+    return true, "App removed successfully"
+end
+
+function appManager.canRemoveApp(appName)
+    local app = appManager.apps[appName]
+    if not app then
+        return false, "App not found"
+    end
+
+    if appManager.isProtected(appName) then
+        return false, "App is protected and cannot be removed"
+    end
+
+    return true, "App can be removed"
+end
+
 function appManager.registerApp(basePath)
     local path = pathManager.resolve(basePath):gsub(".json", "").. ".json"
     local file = fs.open(path, "r")
@@ -62,9 +185,13 @@ function appManager.registerApp(basePath)
         if not manifest then
             error("Invalid manifest file: " .. path)
         end
-        manifest.path = basePath -- Store the base path in manifest
+        manifest.path = basePath
         appManager.apps[manifest.name] = app.new(manifest)
         store.set("apps", manifest.name, {path=basePath, name=manifest.name})
+
+        if manifest.fileAssociations then
+            fileRegistry.registerAppHandlers(manifest.name, manifest.fileAssociations)
+        end
     end
 end
 

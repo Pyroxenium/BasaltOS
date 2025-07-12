@@ -1,0 +1,15 @@
+{
+    "name": "Architect",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "UI designer",
+    "executable": "{system}/apps/Architect/architect.lua",
+    "window": {
+        "width": 37,
+        "height": 16,
+        "min_width": 37,
+        "min_height": 10,
+        "resizable": true,
+        "title": "Architect"
+    }
+}

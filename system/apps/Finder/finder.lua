@@ -279,7 +279,6 @@ local function createContextMenu(x, y, fileName, filePath)
         table.insert(menuItems, {
             text = "New File",
             action = function()
-                -- Erstelle neue Datei im Ordner
                 local newFileName = "new_file.txt"
                 local newFilePath = filePath .. "/" .. newFileName
                 local file = fs.open(newFilePath, "w")
@@ -292,7 +291,6 @@ local function createContextMenu(x, y, fileName, filePath)
         table.insert(menuItems, {
             text = "New Folder", 
             action = function()
-                -- Erstelle neuen Ordner
                 local newFolderName = "new_folder"
                 local newFolderPath = filePath .. "/" .. newFolderName
                 fs.makeDir(newFolderPath)
@@ -303,13 +301,13 @@ local function createContextMenu(x, y, fileName, filePath)
         table.insert(menuItems, {
             text = "Open",
             action = function()
-                BasaltOS.openApp("Edit", filePath)
+                BasaltOS.openPath(filePath)
             end
         })
         table.insert(menuItems, {
             text = "Edit",
             action = function()
-                BasaltOS.openApp("Edit", filePath)
+                BasaltOS.editPath(filePath)
             end
         })
     end    table.insert(menuItems, {
@@ -329,7 +327,8 @@ local function createContextMenu(x, y, fileName, filePath)
                 end
             end)
         end
-    })    table.insert(menuItems, {
+    })    
+    table.insert(menuItems, {
         text = "Delete ",
         action = function()
             local confirmMessage = string.format("Are you sure?")
@@ -466,7 +465,7 @@ fList:onClickUp(function(self, btn, x, y)
                         searchTerm = ""
                         updateList()
                     else
-                        BasaltOS.openApp("Edit", filePath)
+                        BasaltOS.openPath(filePath)
                     end
                 end
             elseif btn == 2 then

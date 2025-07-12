@@ -5,9 +5,13 @@
     "description": "Shell",
     "executable": "rom/programs/shell.lua",
     "icon": "{assets}/icons/shell.bimg",
+    "fileAssociations": {
+        "open": [".lua"]
+    },
     "window": {
         "width": 35,
         "height": 15,
-        "title": "Shell"
+        "title": "Shell",
+        "resizable":true
     }
 }

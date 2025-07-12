@@ -15,6 +15,29 @@ BasaltOS.setAppFrameColor(theme.primaryColor)
 
 local updateAppGrid, refreshApps
 
+local function getChildrenHeight(container)
+    local height = 0
+    for _, child in ipairs(container.get("children")) do
+        if(child.get("visible"))then
+            local newHeight = child.get("y") + child.get("height")
+            if newHeight > height then
+                height = newHeight
+            end
+        end
+    end
+    return height
+end
+
+local function scrollableFrame(container)
+    container:onScroll(function(self, direction)
+        local height = getChildrenHeight(self)
+        local scrollOffset = self.get("offsetY")
+        local maxScroll = height - self.get("height")
+        scrollOffset = math.max(0, math.min(maxScroll, scrollOffset + direction))
+        self.set("offsetY", scrollOffset)
+    end)
+end
+
 BasaltOS.setMenu({
     ["File"] = {
         ["Refresh Apps"] = function()
@@ -79,6 +102,7 @@ local gridFrame = main:addFrame({
     height = "{parent.height - 3}",
     background = theme.primaryColor
 })
+scrollableFrame(gridFrame)
 
 local scrollbar = main:addScrollbar({
     x = "{parent.width}",
@@ -93,10 +117,10 @@ local appButtons = {}
 local apps = {}
 local availableApps = {}
 local filteredApps = {}
+local resizeTimeout = nil
 
 local excludedApps = {
-    ["AppLauncher"] = true,
-    ["Edit"] = true
+    ["AppLauncher"] = true
 }
 
 local function updateCategoryButtons()
@@ -136,6 +160,39 @@ local function filterApps()
     end)
 end
 
+local function removeApp(appName)
+    local success, message = BasaltOS.removeApp(appName)
+
+    if success then
+        BasaltOS.showNotification("Success", message, 3)
+        refreshApps()
+    else
+        BasaltOS.errorDialog(message)
+    end
+end
+
+local function showRemoveAppDialog(appName, app)
+    local canRemove, reason = BasaltOS.canRemoveApp(appName)
+    if not canRemove then
+        BasaltOS.errorDialog(reason)
+        return
+    end
+
+    local message = "Are you sure you want to remove \"" .. appName .. "\"?"
+    if app.manifest.fileAssociations then
+        message = message .. "\n\nThis will also remove associated file extensions."
+    end
+
+    BasaltOS.confirmDialog(
+        "Remove App",
+        message,
+        function(confirmed)
+            if confirmed then
+                removeApp(appName)
+            end
+        end
+    )
+end
 local function createAppGrid()
     for _, button in ipairs(appButtons) do
         if button.frame then
@@ -220,9 +277,43 @@ local function createAppGrid()
             foreground = colors.black
         })
 
-        appFrame:onClick(function()
-            if selectedCategory == "Installed" then
-                BasaltOS.openApp(app.manifest.name)
+        local appName = app.manifest.name
+
+        appFrame:onClickUp(function(self, button, x, y)
+            if self.focused then
+                if selectedCategory == "Installed" then
+                    if button == 1 then
+                        BasaltOS.openApp(appName)
+                    elseif button == 2 then
+                        local winX, winY = BasaltOS.getWindowPosition()
+                        local menuX = winX + x + appFrame.x
+                        local menuY = winY + y + 2 + appFrame.y - gridFrame.offsetY
+
+                        local menuItems = {
+                            {
+                                text = "Open",
+                                action = function()
+                                    BasaltOS.openApp(appName)
+                                end
+                            }
+                        }
+
+                        local canRemove, _ = BasaltOS.canRemoveApp(appName)
+                        if canRemove then
+                            table.insert(menuItems, { 
+                                text = "Remove",
+                                action = function()
+                                    showRemoveAppDialog(appName, app)
+                                end
+                            })
+                        end
+
+                        BasaltOS.contextMenu(menuX, menuY, menuItems, {
+                            width = 12,
+                            maxHeight = 12
+                        })
+                    end
+                end
             end
         end)
 
@@ -232,7 +323,7 @@ local function createAppGrid()
         })
     end
 
-    local maxScroll = math.max(0, rows * 5 - gridFrame.height + 1)  -- Changed from 4 to 5
+    local maxScroll = math.max(0, rows * 5 - gridFrame.height + 1)
     scrollbar:setMax(maxScroll)
 end
 
@@ -247,21 +338,8 @@ function updateAppGrid()
     end
 end
 
--- Future function for loading available apps from GitHub
 local function loadAvailableApps()
-    -- TODO: Implement GitHub repository fetching
-    -- This will download a config file from a GitHub repo
-    -- and populate availableApps with downloadable apps
-    availableApps = {
-        -- Placeholder for future downloadable apps
-        -- {
-        --     manifest = {
-        --         name = "Calculator",
-        --         description = "Simple calculator app",
-        --         version = "1.0.0"
-        --     }
-        -- }
-    }
+    availableApps = {}
 end
 
 function refreshApps()
@@ -298,12 +376,26 @@ scrollbar:onChange("value", function()
     gridFrame:setScrollOffset(0, -offset)
 end)
 
+local function scheduleResize()
+    if resizeTimeout then
+        resizeTimeout = nil
+    end
+
+    basalt.schedule(function()
+        if resizeTimeout == nil then
+            resizeTimeout = true
+            createAppGrid()
+            resizeTimeout = nil
+        end
+    end)
+end
+
 main:observe("width", function()
-    createAppGrid()
+    scheduleResize()
 end)
 
 main:observe("height", function()
-    createAppGrid()
+    scheduleResize()
 end)
 
 main:onKey(function(self, key)

@@ -31,6 +31,9 @@ BaseElement.defineProperty(BaseElement, "name", {default = "", type = "string"})
 --- @property eventCallbacks table BaseElement The event callbacks for the element
 BaseElement.defineProperty(BaseElement, "eventCallbacks", {default = {}, type = "table"})
 
+--- @property enabled boolean BaseElement Whether the element is enabled or not
+BaseElement.defineProperty(BaseElement, "enabled", {default = true, type = "boolean" })
+
 --- Registers a new event listener for the element (on class level)
 --- @shortDescription Registers a new event listener for the element (on class level)
 --- @param class table The class to register
@@ -215,6 +218,9 @@ end
 --- @return boolean? handled Whether the event was handled
 --- @protected
 function BaseElement:dispatchEvent(event, ...)
+    if self.get("enabled") == false then
+        return false
+    end
     if self[event] then
         return self[event](self, ...)
     end
@@ -253,15 +259,12 @@ end
 --- Destroys the element and cleans up all references
 --- @shortDescription Destroys the element and cleans up all references
 function BaseElement:destroy()
-    self._destroyed = true
-    self:removeAllObservers()
-    self:setFocused(false)
-    for event in pairs(self._registeredEvents) do
-        self:listenEvent(event, false)
-    end
     if(self.parent) then
         self.parent:removeChild(self)
     end
+    self._destroyed = true
+    self:removeAllObservers()
+    self:setFocused(false)
 end
 
 --- Requests a render update for this element

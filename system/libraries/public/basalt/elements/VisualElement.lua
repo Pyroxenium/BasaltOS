@@ -467,4 +467,9 @@ end
 function VisualElement:postRender()
 end
 
+function VisualElement:destroy()
+    self.set("visible", false)
+    BaseElement.destroy(self)
+end
+
 return VisualElement

@@ -1,0 +1,14 @@
+{
+    "name": "Settings",
+    "version": "1.0.0",
+    "author": "System",
+    "description": "System Settings and Configuration",
+    "executable": "{system}/apps/Settings/settings.lua",
+    "icon": "{assets}/icons/settings.bimg",
+    "window": {
+        "width": 35,
+        "height": 15,
+        "resizable": true,
+        "title": "Settings"
+    }
+}

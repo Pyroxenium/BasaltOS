@@ -1,17 +1,18 @@
 {
-    "name": "Edit",
+    "name": "Paint",
     "version": "1.0.0",
     "author": "System",
-    "description": "Edit",
-    "executable": "rom/programs/edit.lua",
+    "description": "Paint",
+    "executable": "rom/programs/fun/advanced/paint.lua",
+    "icon": "{assets}/icons/paint.bimg",
     "requiresFile": true,
     "fileAssociations": {
-        "edit": [".lua", ".txt", ".json", ".md", ".cfg", ".conf"]
+        "edit": [".nfp"]
     },
     "window": {
         "width": 35,
         "height": 15,
         "resizable": true,
-        "title": "Edit"
+        "title": "Paint"
     }
 }

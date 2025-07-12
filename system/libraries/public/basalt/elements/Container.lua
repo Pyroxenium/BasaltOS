@@ -164,7 +164,7 @@ local function sortAndFilterChildren(self, children)
     local visibleChildren = {}
 
     for _, child in ipairs(children) do
-        if self:isChildVisible(child) and child.get("visible") then
+        if self:isChildVisible(child) and child.get("visible") and not child._destroyed then
             table.insert(visibleChildren, child)
         end
     end
@@ -250,7 +250,7 @@ function Container:registerChildEvent(child, eventName)
     end
 
     for _, registeredChild in ipairs(self._values.childrenEvents[eventName]) do
-        if registeredChild == child then
+        if registeredChild.get("id") == child.get("id") then
             return self
         end
     end
@@ -688,10 +688,6 @@ end
 --- @private
 function Container:destroy()
     if not self:isType("BaseFrame") then
-        for _, child in ipairs(self.get("children")) do
-            child:destroy()
-        end
-        self.set("childrenSorted", false)
         VisualElement.destroy(self)
         return self
     else

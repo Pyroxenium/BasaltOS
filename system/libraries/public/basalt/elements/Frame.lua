@@ -94,9 +94,12 @@ end
 --- @return boolean handled Whether the event was handled
 --- @protected
 function Frame:mouse_up(button, x, y)
-    self.dragging = false
-    self.dragStartX = nil
-    self.dragStartY = nil
+    if self.dragging then
+        self.dragging = false
+        self.dragStartX = nil
+        self.dragStartY = nil
+        return true
+    end
     return Container.mouse_up(self, button, x, y)
 end
 

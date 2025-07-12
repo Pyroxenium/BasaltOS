@@ -8,8 +8,9 @@ package.path = libs..main..defaultPath
 local basalt = require("libraries.public.basalt")
 local screenManager = require("libraries.private.screenManager")
 local appManager = require("libraries.private.appManager")
+local fileRegistry = require("libraries.private.fileRegistry")
 local desktop
---local store = require("libraries.private.store")
+
 local backgroundProcess = {}
 
 local core = {
@@ -41,15 +42,14 @@ end
 -- Event management
 function core.handleEvents(event)
     handleBackgroundProcess(table.unpack(event))
-    
-    -- Handle notifications
+
     if desktop and desktop.getActive then
         local activeDesktop = desktop.getActive()
         if activeDesktop and activeDesktop.handleEvent then
             activeDesktop:handleEvent(event)
         end
     end
-    
+
     basalt.update(table.unpack(event))
 end
 
@@ -76,6 +76,9 @@ end
 
 --- Main entry point for the OS -- should be moved to startup.lua (later)
 function core.init()
+    -- Initialize File Registry System
+    fileRegistry.init()
+
     -- Application Registry
     appManager.registerApp("{system}/apps/Finder/finder")
     appManager.registerApp("{system}/apps/Edit/edit")
@@ -83,6 +86,9 @@ function core.init()
     appManager.registerApp("{system}/apps/AppLauncher/applauncher")
     appManager.registerApp("{system}/apps/PineStore/pinestore")
     appManager.registerApp("{system}/apps/AppInstaller/appinstaller")
+    appManager.registerApp("{system}/apps/Architect/architect")
+    appManager.registerApp("{system}/apps/Paint/paint")
+    appManager.registerApp("{system}/apps/Settings/settings")
 
     --core.switchScreen("login")
 

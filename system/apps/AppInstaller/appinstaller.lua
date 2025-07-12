@@ -244,17 +244,78 @@ local function createUI()
     elements.fullscreenCheckbox:setText("Windowed")
     elements.fullscreenCheckbox:setCheckedText("Fullscreen")
 
-    elements.installBtn = main:addButton({
+    elements.fileAssocLabel = main:addLabel({
         x = 2,
         y = 25,
+        text = "File Associations:",
+        foreground = colors.yellow
+    })
+
+    elements.openExtLabel = main:addLabel({
+        x = 2,
+        y = 27,
+        text = "Open:",
+        foreground = colors.white
+    })
+
+    elements.openExtInput = main:addInput({
+        x = 7,
+        y = 27,
+        width = "{parent.width - 8}",
+        height = 1,
+        background = colors.black,
+        foreground = colors.white,
+        placeholder = ".lua,.txt (comma separated)"
+    })
+
+    elements.editExtLabel = main:addLabel({
+        x = 2,
+        y = 29,
+        text = "Edit:",
+        foreground = colors.white
+    })
+
+    elements.editExtInput = main:addInput({
+        x = 7,
+        y = 29,
+        width = "{parent.width - 8}",
+        height = 1,
+        background = colors.black,
+        foreground = colors.white,
+        placeholder = ".lua,.txt,.json (comma separated)"
+    })
+
+    elements.requiresFileCheckbox = main:addCheckbox({
+        x = 2,
+        y = 31,
+        foreground = colors.white,
+        checked = false
+    })
+    elements.requiresFileCheckbox:setText("Requires File Path")
+    elements.requiresFileCheckbox:setCheckedText("Requires File Path")
+
+    elements.handlesDirectoriesCheckbox = main:addCheckbox({
+        x = 2,
+        y = 32,
+        foreground = colors.white,
+        checked = false
+    })
+    elements.handlesDirectoriesCheckbox:setText("Can Handle Directories")
+    elements.handlesDirectoriesCheckbox:setCheckedText("Can Handle Directories")
+
+    elements.installBtn = main:addButton({
+        x = 2,
+        y = 34,
         width = 8,
         height = 1,
         text = "Install",
         background = colors.green,
         foreground = colors.white
-    })    elements.cancelBtn = main:addButton({
+    })
+
+    elements.cancelBtn = main:addButton({
         x = 11,
-        y = 25,
+        y = 34,
         width = 6,
         height = 1,
         text = "Cancel",
@@ -349,6 +410,22 @@ local function validateInput()
     return errors
 end
 
+local function parseExtensions(extensionString)
+    if not extensionString or extensionString == "" then
+        return {}
+    end
+    
+    local extensions = {}
+    for ext in extensionString:gmatch("[^,]+") do
+        ext = ext:match("^%s*(.-)%s*$") -- trim whitespace
+        if ext:sub(1,1) ~= "." then
+            ext = "." .. ext
+        end
+        table.insert(extensions, ext:lower())
+    end
+    return extensions
+end
+
 local function generateManifest()
     local manifest = {
         name = trim(elements.nameInput:getText()),
@@ -367,6 +444,35 @@ local function generateManifest()
             title = trim(elements.nameInput:getText())
         }
     }
+
+    if elements.requiresFileCheckbox:getChecked() then
+        manifest.requiresFile = true
+    end
+
+    local openExts = parseExtensions(elements.openExtInput:getText())
+    local editExts = parseExtensions(elements.editExtInput:getText())
+    local handlesDirectories = elements.handlesDirectoriesCheckbox:getChecked()
+
+    if #openExts > 0 or #editExts > 0 or handlesDirectories then
+        manifest.fileAssociations = {}
+        if #openExts > 0 then
+            manifest.fileAssociations.open = openExts
+        end
+        if #editExts > 0 then
+            manifest.fileAssociations.edit = editExts
+        end
+
+        if handlesDirectories then
+            if not manifest.fileAssociations.open then
+                manifest.fileAssociations.open = {}
+            end
+            if not manifest.fileAssociations.edit then
+                manifest.fileAssociations.edit = {}
+            end
+            table.insert(manifest.fileAssociations.open, "__directory")
+            table.insert(manifest.fileAssociations.edit, "__directory")
+        end
+    end
 
     return manifest
 end
@@ -412,6 +518,51 @@ local function installApp()
     local manifestFile = fs.open(manifestPath, "w")
     manifestFile.write(textutils.serializeJSON(manifest))
     manifestFile.close()
+
+    if manifest.fileAssociations then
+        local extensionsToInstall = {}
+
+        if manifest.fileAssociations.open then
+            for _, ext in ipairs(manifest.fileAssociations.open) do
+                if ext ~= "__directory" then
+                    table.insert(extensionsToInstall, {
+                        extension = ext,
+                        canOpen = true,
+                        canEdit = false
+                    })
+                end
+            end
+        end
+
+        if manifest.fileAssociations.edit then
+            for _, ext in ipairs(manifest.fileAssociations.edit) do
+                if ext ~= "__directory" then
+                    local found = false
+                    for _, existing in ipairs(extensionsToInstall) do
+                        if existing.extension == ext then
+                            existing.canEdit = true
+                            found = true
+                            break
+                        end
+                    end
+                    if not found then
+                        table.insert(extensionsToInstall, {
+                            extension = ext,
+                            canOpen = false,
+                            canEdit = true
+                        })
+                    end
+                end
+            end
+        end
+
+        if #extensionsToInstall > 0 then
+            local installed = BasaltOS.installFileExtensions(extensionsToInstall, appName)
+            if installed then
+                BasaltOS.showNotification("Extensions", "File extensions installed for " .. appName, 2)
+            end
+        end
+    end
 
     BasaltOS.showNotification("Success", "App '" .. appName .. "' installed successfully!", 3)
     BasaltOS.registerApp(manifestPath)
