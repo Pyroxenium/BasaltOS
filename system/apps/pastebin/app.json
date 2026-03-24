@@ -1,0 +1,74 @@
+{
+  "id": "pastebin",
+  "name": "Pastebin",
+  "version": "1.0.0",
+  "executable": "/rom/programs/http/pastebin.lua",
+  "category": "utilities",
+  "author": "ComputerCraft",
+  "description": "Upload and download code from pastebin.com",
+  "singleton": false,
+  "args": [
+    {
+      "name": "command",
+      "label": "Action",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "get",
+          "label": "Download",
+          "args": [
+            {
+              "name": "code",
+              "label": "Pastebin Code",
+              "type": "text",
+              "required": true,
+              "description": "e.g. abc123",
+              "default": ""
+            },
+            {
+              "name": "output",
+              "label": "Save as",
+              "type": "file",
+              "required": true,
+              "description": "e.g. myscript.lua",
+              "default": ""
+            }
+          ]
+        },
+        {
+          "value": "put",
+          "label": "Upload",
+          "args": [
+            {
+              "name": "input",
+              "label": "Local File",
+              "type": "file",
+              "required": true,
+              "description": "e.g. myscript.lua",
+              "default": ""
+            }
+          ]
+        },
+        {
+          "value": "run",
+          "label": "Run",
+          "args": [
+            {
+              "name": "code",
+              "label": "Pastebin Code",
+              "type": "text",
+              "required": true,
+              "description": "e.g. abc123",
+              "default": ""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "window": {
+    "fullscreen": false,
+    "resizable": false
+  }
+}

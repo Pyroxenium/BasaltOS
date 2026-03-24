@@ -1,0 +1,18 @@
+{
+  "id": "basaltterminal",
+  "name": "Terminal",
+  "version": "1.0.0",
+  "description": "Command line terminal for BasaltOS",
+  "author": "BasaltOS",
+  "category": "system",
+  "executable": "main.lua",
+  "singleton": false,
+  "window": {
+    "fullscreen": false,
+    "default_width": 45,
+    "default_height": 20,
+    "resizable": true,
+    "min_width": 30,
+    "min_height": 10
+  }
+}

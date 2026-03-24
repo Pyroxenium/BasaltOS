@@ -1,3 +1,0 @@
-local session = {}
-
-return session

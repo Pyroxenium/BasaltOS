@@ -1,0 +1,24 @@
+{
+  "id": "exec",
+  "name": "Exec",
+  "version": "1.0.0",
+  "executable": "main.lua",
+  "category": "utilities",
+  "author": "BasaltOS",
+  "description": "Runs a Lua script and shows errors if it crashes",
+  "singleton": false,
+  "args": [
+    {
+      "name": "path",
+      "label": "Script Path",
+      "type": "file",
+      "required": true,
+      "description": "Lua script to run",
+      "default": ""
+    }
+  ],
+  "window": {
+    "fullscreen": false,
+    "resizable": false
+  }
+}

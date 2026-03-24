@@ -1,0 +1,18 @@
+{
+  "id": "worm",
+  "name": "Worm",
+  "version": "1.0.0",
+  "executable": "/rom/programs/fun/worm.lua",
+  "category": "games",
+  "author": "ComputerCraft",
+  "description": "Classic snake game",
+  "singleton": false,
+  "window": {
+    "fullscreen": true,
+    "resizable": false,
+    "default_width": 51,
+    "default_height": 19,
+    "min_width": 51,
+    "min_height": 19
+  }
+}

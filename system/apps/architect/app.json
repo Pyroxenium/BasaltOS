@@ -1,0 +1,16 @@
+{
+    "id": "architect",
+    "name": "Architect",
+    "version": "1.0.0",
+    "description": "Visual UI builder for Basalt",
+    "author": "BasaltOS",
+    "category": "utilities",
+    "executable": "main.lua",
+    "singleton": true,
+    "window": {
+        "fullscreen": false,
+        "resizable": false,
+        "default_width": 65,
+        "default_height": 22
+    }
+}

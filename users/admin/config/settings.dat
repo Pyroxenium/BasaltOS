@@ -1,0 +1,31 @@
+{
+  desktop = {
+    icon_size = "medium",
+    show_desktop_icons = true,
+    background_color = "red",
+  },
+  taskbar = {
+    show_clock = true,
+    auto_hide = false,
+    position = "left",
+    clock_format = "%H:%M:%S",
+    button_width = 12,
+  },
+  window = {
+    snap_to_edges = true,
+    snap_distance = 2,
+    enable_animations = false,
+    default_width = 30,
+    default_height = 12,
+  },
+  startmenu = {
+    group_by_category = true,
+    show_recently_used = true,
+    max_recent_items = 10,
+  },
+  system = {
+    language = "de",
+    log_level = "INFO",
+    auto_save_interval = 300,
+  },
+}

@@ -1,1 +1,1 @@
-shell.run("system/core.lua")
+shell.run("system/main.lua")
