@@ -287,9 +287,6 @@ local function validateStagedManifest(app, staging_path)
     if tostring(manifest.id or "") ~= app.id then
         return nil, "app.json ID does not match the catalog"
     end
-    if tostring(manifest.version or "") ~= app.version then
-        return nil, "app.json version does not match the catalog"
-    end
     local executable = tostring(manifest.executable or "")
     if executable == "" then return nil, "app.json declares no executable" end
     if executable:sub(1, 5) ~= "/rom/" then
