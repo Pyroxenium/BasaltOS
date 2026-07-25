@@ -1,4 +1,8 @@
 system.log
-.idea
-OVERVIEW.md
+obsidian.log
 basalt.log
+
+# BasaltOS runtime state
+os/system/config.dat
+os/system/logs/
+os/users/

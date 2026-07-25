@@ -1,0 +1,17 @@
+{
+  "id": "launcher",
+  "name": "App Launcher",
+  "version": "1.0.0",
+  "description": "Browse and launch installed applications",
+  "author": "BasaltOS",
+  "category": "system",
+  "executable": "main.lua",
+  "icon": "icon.bimg",
+  "singleton": true,
+  "window": {
+    "fullscreen": false,
+    "resizable": false,
+    "default_width": 50,
+    "default_height": 18
+  }
+}

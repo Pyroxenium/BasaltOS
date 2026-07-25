@@ -1,0 +1,27 @@
+{
+  "id": "edit",
+  "name": "Editor",
+  "version": "1.0.0",
+  "executable": "/rom/programs/edit.lua",
+  "file_icon": {"char": 131, "bg": "lightBlue"},
+  "category": "utilities",
+  "author": "ComputerCraft",
+  "description": "Text and code editor",
+  "singleton": false,
+  "args": [
+    {
+      "name": "path",
+      "label": "File Path",
+      "type": "file",
+      "required": true,
+      "description": "File to open or create",
+      "default": "",
+      "allowCreate": true,
+      "actionLabel": "Open"
+    }
+  ],
+  "window": {
+    "fullscreen": false,
+    "resizable": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "flimgviewer",
+  "name": "Image Viewer",
+  "version": "1.1.0",
+  "description": "View FLIMG images and animations",
+  "author": "BasaltOS",
+  "category": "utilities",
+  "executable": "main.lua",
+  "file_icon": {"char": 131, "fg": "white", "bg": "magenta"},
+  "icons": {
+    "main": "icon.flimg",
+    "taskbar": "taskbar.flimg"
+  },
+  "singleton": false,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 40,
+    "default_height": 15,
+    "min_width": 20,
+    "min_height": 8
+  }
+}

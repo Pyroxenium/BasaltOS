@@ -1,0 +1,23 @@
+{
+  "id": "notepad",
+  "name": "Notepad",
+  "version": "1.0.0",
+  "description": "Create and edit text documents",
+  "author": "BasaltOS",
+  "category": "utilities",
+  "executable": "main.lua",
+  "file_icon": {"char": 131, "bg": "white"},
+  "icons": {
+    "main": "icon.bimg",
+    "taskbar": "taskbar.bimg"
+  },
+  "singleton": false,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 46,
+    "default_height": 17,
+    "min_width": 24,
+    "min_height": 8
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "filely",
+  "name": "Filely",
+  "version": "1.0.0",
+  "description": "File manager for BasaltOS",
+  "author": "BasaltOS",
+  "category": "system",
+  "executable": "main.lua",
+  "icon": "icon.bimg",
+  "singleton": false,
+  "window": {
+    "fullscreen": false,
+    "default_width": 46,
+    "default_height": 16,
+    "resizable": true,
+    "min_width": 38,
+    "min_height": 13
+  }
+}

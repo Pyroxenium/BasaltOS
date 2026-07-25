@@ -1,0 +1,22 @@
+{
+  "id": "basaltstore",
+  "name": "Basalt Store",
+  "version": "0.1.0",
+  "description": "Browse and install applications made for BasaltOS",
+  "author": "BasaltOS",
+  "category": "system",
+  "executable": "main.lua",
+  "icons": {
+    "main": "icon.bimg",
+    "taskbar": "taskbar.bimg"
+  },
+  "singleton": true,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 51,
+    "default_height": 18,
+    "min_width": 43,
+    "min_height": 14
+  }
+}

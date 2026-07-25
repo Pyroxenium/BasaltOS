@@ -1,0 +1,1 @@
+{"icons":{"main":"icon.bimg","taskbar":"taskbar.bimg"},"window":{"default_height":18,"min_width":43,"default_width":51,"min_height":14,"resizable":true,"fullscreen":false},"id":"pinestore","version":"1.1.0","category":"system","singleton":true,"name":"PineStore","executable":"main.lua","author":"BasaltOS","description":"Browse and install community projects for CC: Tweaked"}

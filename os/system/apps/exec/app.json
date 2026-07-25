@@ -1,0 +1,28 @@
+{
+  "id": "exec",
+  "name": "Exec",
+  "version": "1.1.0",
+  "executable": "main.lua",
+  "file_icon": {"char": 131, "bg": "lime"},
+  "category": "utilities",
+  "author": "BasaltOS",
+  "description": "Runs Lua scripts with target-relative modules and crash reporting",
+  "singleton": false,
+  "args": [
+    {
+      "name": "path",
+      "label": "Script Path",
+      "type": "file",
+      "required": true,
+      "description": "Lua script to run",
+      "default": "",
+      "extensions": ["lua"]
+    }
+  ],
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 51,
+    "default_height": 19
+  }
+}
