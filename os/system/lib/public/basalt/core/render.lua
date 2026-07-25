@@ -18,6 +18,10 @@ local charOf = palette.charOf
 local mosaicChars, mosaicCache = {}, {}
 for mask = 0, 31 do mosaicChars[mask] = string.char(128 + mask) end
 
+local function round(value)
+    return floor(value + 0.5)
+end
+
 ---@class Render
 local Render = {}
 Render.__index = Render
@@ -62,6 +66,11 @@ end
 ---@param h number Child height
 ---@return self
 function Render:push(x, y, w, h)
+    -- Terminal cells are discrete. Dynamic expressions may still produce
+    -- fractional geometry, so normalize it before it reaches the clip stack.
+    x, y = round(x), round(y)
+    w, h = math.max(0, round(w)), math.max(0, round(h))
+
     local n, s = self.stackN, self.stack
     s[n + 1], s[n + 2], s[n + 3] = self.ox, self.oy, self.cx1
     s[n + 4], s[n + 5], s[n + 6] = self.cy1, self.cx2, self.cy2
@@ -154,6 +163,7 @@ end
 ---@param bgChar string|nil Encoded background bytes
 ---@return self
 function Render:write(x, y, str, fgChar, bgChar)
+    x, y = round(x), round(y)
     local ay = y + self.oy
     if ay < self.cy1 or ay > self.cy2 then return self end
 

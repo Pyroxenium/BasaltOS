@@ -217,7 +217,8 @@ local file_list_view = main_frame:addList({
 })
 
 local empty_action = main_frame:addButton({
-    x="{parent.width / 2 - 6}", y="{parent.height / 2 + 1}",
+    x="{floor((parent.width - self.width) / 2) + 1}",
+    y="{floor((parent.height - 4) / 2) + 4}",
     width=13, height=1, text="+ New folder", visible=false, z=20,
 })
 
