@@ -1,13 +1,12 @@
 local BASALT_URL =
-    "https://raw.githubusercontent.com/Pyroxenium/Basalt2/refs/heads/main/release/basalt-full.lua"
-local TREE_URL =
-    "https://api.github.com/repos/Pyroxenium/BasaltOS/git/trees/main?recursive=1"
+    "https://raw.githubusercontent.com/Pyroxenium/Basalt2/refs/heads/basalt2.5/bundle/basalt.min.lua"
+local MANIFEST_URL =
+    "https://raw.githubusercontent.com/Pyroxenium/BasaltOS/refs/heads/main/install-manifest.txt"
 local RAW_BASE =
     "https://raw.githubusercontent.com/Pyroxenium/BasaltOS/refs/heads/main/"
 
 local HEADERS = {
     ["User-Agent"] = "BasaltOS-Installer",
-    ["Accept"] = "application/vnd.github+json",
     ["Cache-Control"] = "no-cache",
 }
 
@@ -47,6 +46,17 @@ if not http then
 end
 
 resetTerminal()
+
+if term.isColor and not term.isColor() then
+    error("BasaltOS requires an Advanced Computer.", 0)
+end
+
+local terminalWidth, terminalHeight = term.getSize()
+if terminalWidth < 51 or terminalHeight < 19 then
+    error(("BasaltOS requires a terminal of at least 51x19 (current: %dx%d).")
+        :format(terminalWidth, terminalHeight), 0)
+end
+
 term.setTextColor(colors.lightBlue)
 print("Loading BasaltOS Installer...")
 term.setTextColor(colors.white)
@@ -57,7 +67,7 @@ if not basaltSource then
 end
 
 local basaltChunk, loadError = load(
-    basaltSource, "@basalt-full.lua", "t", _ENV)
+    basaltSource, "@basalt.min.lua", "t", _ENV)
 if not basaltChunk then
     error("Could not load Basalt: " .. tostring(loadError), 0)
 end
@@ -163,39 +173,57 @@ local function checkCancelled()
     if cancelRequested then error("Installation cancelled.", 0) end
 end
 
+local function isSafeManifestPath(path)
+    if path == "" or path:sub(1, 1) == "/" then return false end
+    if path:find("\\", 1, true) or path:find("%z") then return false end
+    if not path:match("^[%w%._%-%/]+$") then return false end
+    for part in path:gmatch("[^/]+") do
+        if part == "." or part == ".." then return false end
+    end
+    return true
+end
+
 local function fetchFileList()
-    setStatus("Reading the BasaltOS repository...", colors.white)
-    setDetail("Requesting the current file list from GitHub.")
+    setStatus("Reading the install manifest...", colors.white)
+    setDetail("Requesting the versioned BasaltOS file list.")
 
-    local body, reason = download(TREE_URL)
+    local body, reason = download(MANIFEST_URL)
     if not body then
-        error("Could not read the repository: " .. tostring(reason), 0)
-    end
-
-    local tree, jsonError = textutils.unserializeJSON(body)
-    if type(tree) ~= "table" then
-        error("GitHub returned invalid repository data: "
-            .. tostring(jsonError or "unknown response"), 0)
-    end
-    if type(tree.tree) ~= "table" then
-        error(tostring(tree.message or "The repository tree is unavailable."), 0)
-    end
-    if tree.truncated then
-        error("The GitHub repository tree was truncated.", 0)
+        error("Could not download the install manifest: "
+            .. tostring(reason), 0)
     end
 
     local files = {}
     local totalBytes = 0
-    for _, entry in ipairs(tree.tree) do
-        local relative = type(entry.path) == "string"
-            and entry.path:match("^os/(.+)$") or nil
-        if relative and entry.type == "blob" and not isRuntimePath(relative) then
-            files[#files + 1] = {
-                source=entry.path,
-                target=relative,
-                size=tonumber(entry.size) or 0,
-            }
-            totalBytes = totalBytes + (tonumber(entry.size) or 0)
+    local seen = {}
+    local lineNumber = 0
+    for line in (body .. "\n"):gmatch("(.-)\r?\n") do
+        lineNumber = lineNumber + 1
+        line = line:match("^%s*(.-)%s*$")
+        if line ~= "" and line:sub(1, 1) ~= "#" then
+            local source, size = line:match("^(os/[^|]+)|(%d+)$")
+            local relative = source and source:match("^os/(.+)$") or nil
+            if not source or not relative or not isSafeManifestPath(relative) then
+                error(("Invalid install manifest entry on line %d.")
+                    :format(lineNumber), 0)
+            end
+            if seen[relative] then
+                error("Duplicate install manifest path: " .. relative, 0)
+            end
+            seen[relative] = true
+
+            if not isRuntimePath(relative) then
+                size = tonumber(size) or 0
+                if size < 0 then
+                    error("Invalid file size for " .. relative, 0)
+                end
+                files[#files + 1] = {
+                    source=source,
+                    target=relative,
+                    size=size,
+                }
+                totalBytes = totalBytes + size
+            end
         end
     end
 
@@ -207,16 +235,18 @@ local function fetchFileList()
         return a.target < b.target
     end)
     if #files == 0 then
-        error("No BasaltOS files were found in the repository.", 0)
+        error("The install manifest contains no BasaltOS files.", 0)
     end
     return files, totalBytes
 end
 
 local function verifySpace(totalBytes)
     local free = fs.getFreeSpace("/")
-    if type(free) == "number" and free < totalBytes then
-        error(("Not enough disk space. Need %d bytes, have %d bytes.")
-            :format(totalBytes, free), 0)
+    local required = totalBytes + 32768
+    if type(free) == "number" and free < required then
+        error(("Not enough free space for the staged installation. "
+            .. "Need about %d KB, have %d KB.")
+            :format(math.ceil(required / 1024), math.floor(free / 1024)), 0)
     end
 end
 
@@ -265,6 +295,10 @@ end
 
 local function installFiles(files)
     stagePath = makeStagePath()
+    local newRoot = fs.combine(stagePath, "new")
+    local backupRoot = fs.combine(stagePath, "backup")
+    fs.makeDir(newRoot)
+    fs.makeDir(backupRoot)
 
     for index, file in ipairs(files) do
         checkCancelled()
@@ -278,31 +312,63 @@ local function installFiles(files)
             error("Could not download " .. file.target .. ": "
                 .. tostring(reason), 0)
         end
-        writeFile(fs.combine(stagePath, file.target), content)
+        if file.size > 0 and #content ~= file.size then
+            error(("Downloaded size mismatch for %s (expected %d, got %d).")
+                :format(file.target, file.size, #content), 0)
+        end
+        writeFile(fs.combine(newRoot, file.target), content)
     end
 
     checkCancelled()
-    local stagedStartup = fs.combine(stagePath, "startup.lua")
+    local stagedStartup = fs.combine(newRoot, "startup.lua")
     if fs.exists(stagedStartup) then backupStartup(stagedStartup) end
 
     setStatus("Applying the installation...", colors.white)
-    for index, file in ipairs(files) do
-        checkCancelled()
-        local source = fs.combine(stagePath, file.target)
-        local target = fs.combine("/", file.target)
-        ensureParent(target)
+    local applied = {}
+    local applyOk, applyError = pcall(function()
+        for index, file in ipairs(files) do
+            checkCancelled()
+            local source = fs.combine(newRoot, file.target)
+            local target = fs.combine("/", file.target)
+            local backup = fs.combine(backupRoot, file.target)
+            local entry = {
+                target=target,
+                backup=backup,
+                hadOriginal=false,
+            }
+            applied[#applied + 1] = entry
 
-        if fs.exists(target) then
-            if fs.isDir(target) then
-                error("Cannot replace directory with file: " .. target, 0)
+            ensureParent(target)
+            if fs.exists(target) then
+                if fs.isDir(target) then
+                    error("Cannot replace directory with file: " .. target, 0)
+                end
+                ensureParent(backup)
+                fs.move(target, backup)
+                entry.hadOriginal = true
             end
-            fs.delete(target)
-        end
-        fs.move(source, target)
+            fs.move(source, target)
 
-        local percent = 88 + math.floor(index / #files * 12)
-        progress:setProgress(math.min(100, percent))
-        setDetail(file.target)
+            local percent = 88 + math.floor(index / #files * 12)
+            progress:setProgress(math.min(100, percent))
+            setDetail(file.target)
+        end
+    end)
+
+    if not applyOk then
+        setStatus("Restoring the previous installation...", colors.orange)
+        for index = #applied, 1, -1 do
+            local entry = applied[index]
+            if fs.exists(entry.target) and not fs.isDir(entry.target) then
+                fs.delete(entry.target)
+            end
+            if entry.hadOriginal and fs.exists(entry.backup) then
+                ensureParent(entry.target)
+                fs.move(entry.backup, entry.target)
+            end
+        end
+        error("Could not apply BasaltOS; previous files were restored. "
+            .. tostring(applyError), 0)
     end
 
     fs.delete(stagePath)
