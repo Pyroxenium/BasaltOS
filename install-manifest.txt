@@ -134,8 +134,8 @@ os/system/lib/public/obsidian/core/debug.lua|295
 os/system/lib/public/obsidian/core/ecs.lua|12565
 os/system/lib/public/obsidian/core/error.lua|3097
 os/system/lib/public/obsidian/core/event.lua|2629
-os/system/lib/public/obsidian/core/input_mapper.lua|1720
 os/system/lib/public/obsidian/core/input.lua|10765
+os/system/lib/public/obsidian/core/input_mapper.lua|1720
 os/system/lib/public/obsidian/core/loader.lua|10021
 os/system/lib/public/obsidian/core/logger.lua|2573
 os/system/lib/public/obsidian/core/math.lua|9895
