@@ -65,8 +65,7 @@ If applying the installation fails, files already changed during that attempt
 are restored automatically. After installation, select **Reboot** to enter
 BasaltOS.
 
-On the first boot, BasaltOS asks you to create the first local administrator.
-There is no default username or password.
+The default account is admin with the password admin (you can change it in the settings).
 
 ### Updating
 

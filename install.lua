@@ -73,81 +73,183 @@ if not basaltChunk then
 end
 
 local basalt = basaltChunk()
-local main = basalt.getMainFrame():setBackground(colors.gray)
-
-local header = main:addFrame({
-    x=1, y=1, width="{parent.width}", height=3,
-    background=colors.blue,
-})
-
-header:addLabel({
-    x=2, y=1, text="BasaltOS Installer",
-    foreground=colors.white,
-})
-
-header:addLabel({
-    x=2, y=2, text="A lightweight and playful OS for CC:Tweaked",
-    foreground=colors.lightBlue,
-})
-
-local title = main:addLabel({
-    x=3, y=5, text="Ready to install",
-    foreground=colors.white,
-})
-
-local description = main:addLabel({
-    x=3, y=7, width="{parent.width - 5}", height=2,
-    autoSize=false, foreground=colors.lightGray,
-})
-description:setText(
-    "BasaltOS will be installed into the computer root. "
-    .. "Existing BasaltOS files are updated and user files are kept.")
-
-local progress = main:addProgressBar({
-    x=3, y=10, width="{parent.width - 5}", height=1,
-    background=colors.lightGray,
-    foreground=colors.white,
-    progressColor=colors.lime,
-    showPercentage=true,
-})
-
-local status = main:addLabel({
-    x=3, y=12, width="{parent.width - 5}", height=1,
-    autoSize=false, foreground=colors.white,
-})
-status:setText("Destination: /")
-
-local detail = main:addLabel({
-    x=3, y=14, width="{parent.width - 5}", height=2,
-    autoSize=false, foreground=colors.lightGray,
-})
-detail:setText("The existing startup.lua is backed up before it is replaced.")
-
-local closeButton = main:addButton({
-    x=3, y="{parent.height - 2}", width=10, height=1,
-    text="Close", background=colors.lightGray, foreground=colors.black,
-})
-
-local installButton = main:addButton({
-    x="{parent.width - 13}", y="{parent.height - 2}",
-    width=11, height=1, text="Install",
-    background=colors.lime, foreground=colors.black,
-})
-
 local installing = false
 local cancelRequested = false
 local readyToReboot = false
 local stagePath
+local logoFrame = 1
+local logoAccent
+
+local theme = basalt.use("theme")
+local palette = theme.applyPreset("basalt")
+local animation = basalt.use("animation")
+basalt.use("bigfont")
+
+logoAccent = palette.lava
+
+local main = basalt.getMainFrame():setBackground(palette.bg)
+
+local brandPanel = main:addFrame({
+    x=1, y=1, width=17, height="{parent.height}",
+    background=palette.surface,
+})
+
+local crystal = {
+    "     1     ",
+    "    121    ",
+    "   12321   ",
+    "  1234321  ",
+    " 123454321 ",
+    "  2345432  ",
+    "   34543   ",
+    "    454    ",
+    "     5     ",
+}
+
+local orbit = {
+    {8, 1}, {13, 3}, {15, 7}, {13, 12},
+    {8, 14}, {3, 12}, {1, 7}, {3, 3},
+}
+
+local logo = brandPanel:addCanvas({
+    x=2, y=2, width=15, height=14,
+    background=palette.surface,
+    draw=function(_, buffer)
+        local layers = {
+            palette.border,
+            palette.info,
+            palette.ember,
+            palette.lava,
+            logoAccent,
+        }
+
+        for row, line in ipairs(crystal) do
+            for column = 1, #line do
+                local layer = tonumber(line:sub(column, column))
+                if layer then
+                    local color = layers[layer]
+                    buffer:fill(column + 2, row + 2, 1, 1,
+                        " ", color, color)
+                end
+            end
+        end
+
+        local current = orbit[logoFrame]
+        local previous = orbit[(logoFrame + #orbit - 2) % #orbit + 1]
+        buffer:blit(previous[1], previous[2], ".",
+            palette.muted, palette.surface)
+        buffer:blit(current[1], current[2], "*",
+            logoAccent, palette.surface)
+    end,
+})
+
+brandPanel:addLabel({
+    x=4, y=17, width=11, height=1,
+    autoSize=false, text="BASALT 2.5",
+    foreground=palette.text,
+})
+
+brandPanel:addLabel({
+    x=5, y=18, width=9, height=1,
+    autoSize=false, text="INSTALLER",
+    foreground=palette.muted,
+})
+
+local brand = main:addBigFont({
+    x=22, y=2, text="BasaltOS", fontSize=1,
+    foreground=palette.lava, background=palette.bg,
+})
+
+local tagline = main:addLabel({
+    x=24, y=5, width="{parent.width - 21}", height=1,
+    autoSize=false, text="A playful OS for CC:Tweaked",
+    foreground=palette.muted,
+})
+
+local statusCard = main:addFrame({
+    x=19, y=7, width="{parent.width - 20}", height=9,
+    background=palette.surface,
+})
+
+local phase = statusCard:addLabel({
+    x=2, y=2, width=8, height=1,
+    autoSize=false, text=" READY",
+    foreground=palette.bg, background=palette.lava,
+})
+
+local title = statusCard:addLabel({
+    x=11, y=2, width="{parent.width - 12}", height=1,
+    autoSize=false, text="Ready to install",
+    foreground=palette.text,
+})
+
+local status = statusCard:addLabel({
+    x=2, y=4, width="{parent.width - 4}", height=2,
+    autoSize=false, foreground=palette.text,
+})
+status:setText("Target: computer root (/)")
+
+local detail = statusCard:addLabel({
+    x=2, y=6, width="{parent.width - 4}", height=1,
+    autoSize=false, foreground=palette.muted,
+})
+detail:setText("User data stays untouched.")
+
+local progress = statusCard:addProgressBar({
+    x=2, y=8, width="{parent.width - 4}", height=1,
+    background=palette.border,
+    foreground=palette.text,
+    barColor=palette.lava,
+    showPercentage=true,
+})
+
+main:addLabel({
+    x=20, y=17, width="{parent.width - 21}", height=1,
+    autoSize=false, text="Staged install + safe rollback",
+    foreground=palette.muted,
+})
+
+local closeButton = main:addButton({
+    x=20, y=19, width=10, height=1,
+    text="Close", background=palette.raised, foreground=palette.text,
+})
+
+local installButton = main:addButton({
+    x="{parent.width - 11}", y=19,
+    width=10, height=1, text="Install",
+    background=palette.lava, foreground=palette.bg,
+})
+
+local function setPhase(text, color)
+    text = tostring(text):upper():sub(1, 8)
+    phase:setText(string.rep(" ", math.max(0, math.floor((8 - #text) / 2)))
+        .. text)
+    phase:setBackground(color or palette.lava)
+    phase:setForeground(palette.bg)
+    logoAccent = color or palette.lava
+    logo:markRenderDirty()
+end
+
+animation.to(brand, {x=20}, 0.4, "easeOut")
+animation.to(tagline, {x=20}, 0.5, "easeOut")
+
+basalt.schedule(function()
+    while true do
+        sleep(installing and 0.09 or 0.18)
+        logoFrame = logoFrame % #orbit + 1
+        logo:markRenderDirty()
+    end
+end)
 
 local function setStatus(message, color)
-    status:setForeground(color or colors.white)
+    status:setForeground(color or palette.text)
     status:setText(message)
 end
 
 local function setDetail(message)
-    local width = math.max(1, main:getWidth() - 5)
-    if #message > width * 2 then
-        message = message:sub(1, width * 2 - 3) .. "..."
+    local width = math.max(1, detail:getWidth())
+    if #message > width then
+        message = message:sub(1, math.max(1, width - 3)) .. "..."
     end
     detail:setText(message)
 end
@@ -184,7 +286,8 @@ local function isSafeManifestPath(path)
 end
 
 local function fetchFileList()
-    setStatus("Reading the install manifest...", colors.white)
+    setPhase("PREPARE", palette.info)
+    setStatus("Reading the install manifest...", palette.text)
     setDetail("Requesting the versioned BasaltOS file list.")
 
     local body, reason = download(MANIFEST_URL)
@@ -300,6 +403,7 @@ local function installFiles(files)
     fs.makeDir(newRoot)
     fs.makeDir(backupRoot)
 
+    setPhase("DOWNLOAD", palette.lava)
     for index, file in ipairs(files) do
         checkCancelled()
         local percent = math.floor(index / #files * 88)
@@ -323,7 +427,8 @@ local function installFiles(files)
     local stagedStartup = fs.combine(newRoot, "startup.lua")
     if fs.exists(stagedStartup) then backupStartup(stagedStartup) end
 
-    setStatus("Applying the installation...", colors.white)
+    setPhase("APPLY", palette.warning)
+    setStatus("Applying the installation...", palette.text)
     local applied = {}
     local applyOk, applyError = pcall(function()
         for index, file in ipairs(files) do
@@ -356,7 +461,8 @@ local function installFiles(files)
     end)
 
     if not applyOk then
-        setStatus("Restoring the previous installation...", colors.orange)
+        setPhase("RESTORE", palette.warning)
+        setStatus("Restoring the previous installation...", palette.warning)
         for index = #applied, 1, -1 do
             local entry = applied[index]
             if fs.exists(entry.target) and not fs.isDir(entry.target) then
@@ -387,17 +493,19 @@ local function finishAttempt(ok, reason)
     if ok then
         readyToReboot = true
         progress:setProgress(100)
-        title:setText("Installation complete")
-        title:setForeground(colors.lime)
-        setStatus("BasaltOS was installed successfully.", colors.lime)
+        title:setText("Install complete")
+        title:setForeground(palette.success)
+        setPhase("COMPLETE", palette.success)
+        setStatus("BasaltOS is ready to use.", palette.success)
         setDetail("Reboot the computer to start BasaltOS.")
         installButton:setText("Reboot")
         installButton:setVisible(true)
     else
         progress:setProgress(0)
         title:setText("Installation failed")
-        title:setForeground(colors.red)
-        setStatus(tostring(reason or "Unknown installation error"), colors.red)
+        title:setForeground(palette.danger)
+        setPhase("ERROR", palette.danger)
+        setStatus(tostring(reason or "Unknown installation error"), palette.danger)
         setDetail("Check HTTP access and free disk space, then try again.")
         installButton:setText("Retry")
         installButton:setVisible(true)
@@ -409,7 +517,8 @@ local function performInstallation()
     cancelRequested = false
     readyToReboot = false
     title:setText("Installing BasaltOS")
-    title:setForeground(colors.white)
+    title:setForeground(palette.text)
+    setPhase("PREPARE", palette.info)
     installButton:setVisible(false)
     closeButton:setText("Cancel")
     progress:setProgress(0)
@@ -438,7 +547,8 @@ closeButton:onClick(function(_, button)
     if installing then
         cancelRequested = true
         closeButton:setText("Stopping")
-        setStatus("Cancelling after the current download...", colors.yellow)
+        setPhase("CANCEL", palette.warning)
+        setStatus("Cancelling after the current download...", palette.warning)
     else
         basalt.stop()
     end
