@@ -1,0 +1,5 @@
+# The packed image is installed byte for byte, and the installer checks every
+# file against the size in dist/install-manifest.txt. No line-ending
+# conversion there, and none for packages anywhere.
+dist/** -text
+*.bpk binary

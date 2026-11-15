@@ -322,7 +322,8 @@ function program_env.build(base_env, context, make_pkg, program_dir)
 
         isEmpty = function()
             local svc = service.getService("clipboard")
-            return svc and svc.isEmpty() or true
+            if not svc then return true end
+            return svc.isEmpty()
         end,
 
         clear = function()

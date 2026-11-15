@@ -1,9 +1,39 @@
+-- BasaltOS installer.
+--
+--   wget run <address of this file> [branch] [source] [location]
+--
+--   branch    branch to install from (default: main)
+--   source    install the plain files under os/ even if the branch offers a
+--             packed image
+--   location  install from a folder on this computer or from another base
+--             address instead of GitHub, e.g. /disk/BasaltOS/
+--
+-- A branch may carry a packed image in dist/ (written by
+-- tools\build.ps1 -Publish). It is laid out like the repository root, with its
+-- own install-manifest.txt and the image under dist/os/, and is installed in
+-- preference to the plain files.
+
+local arguments = { ... }
+local branch, forceSource, location = "main", false, nil
+for _, argument in ipairs(arguments) do
+    if argument == "source" then
+        forceSource = true
+    elseif argument:find("^https?://") or argument:sub(1, 1) == "/" then
+        location = argument
+    elseif argument:match("^[%w%._%-/]+$") then
+        branch = argument
+    else
+        error("BasaltOS Installer: cannot use the argument '" .. argument .. "'.", 0)
+    end
+end
+
 local BASALT_URL =
     "https://raw.githubusercontent.com/Pyroxenium/Basalt2/refs/heads/basalt2.5/bundle/basalt.min.lua"
-local MANIFEST_URL =
-    "https://raw.githubusercontent.com/Pyroxenium/BasaltOS/refs/heads/main/install-manifest.txt"
-local RAW_BASE =
-    "https://raw.githubusercontent.com/Pyroxenium/BasaltOS/refs/heads/main/"
+local RAW_BASE = location
+    or ("https://raw.githubusercontent.com/Pyroxenium/BasaltOS/refs/heads/" .. branch .. "/")
+if RAW_BASE:sub(-1) ~= "/" then RAW_BASE = RAW_BASE .. "/" end
+local PACKED_BASE = RAW_BASE .. "dist/"
+local OFFLINE = not RAW_BASE:find("^https?://")
 
 local HEADERS = {
     ["User-Agent"] = "BasaltOS-Installer",
@@ -23,24 +53,28 @@ local function resetTerminal()
     term.setCursorPos(1, 1)
 end
 
-local function request(url)
-    local ok, response, reason = pcall(http.get, url, HEADERS)
-    if not ok then return nil, tostring(response) end
-    if not response then return nil, tostring(reason or "request failed") end
-    return response
-end
-
+--- Fetches a file byte for byte: packages are binary, and a text-mode
+--- transfer would change them.
 local function download(url)
-    local response, reason = request(url)
-    if not response then return nil, reason end
-    local ok, content = pcall(response.readAll)
-    response.close()
+    local source, reason
+    if url:find("^https?://") then
+        local ok, response, failure = pcall(http.get, url, HEADERS, true)
+        if not ok then return nil, tostring(response) end
+        if not response then return nil, tostring(failure or "request failed") end
+        source = response
+    else
+        if not fs.exists(url) or fs.isDir(url) then return nil, "no such file" end
+        source, reason = fs.open(url, "rb")
+        if not source then return nil, tostring(reason) end
+    end
+    local ok, content = pcall(source.readAll)
+    source.close()
     if not ok then return nil, tostring(content) end
     if type(content) ~= "string" then return nil, "empty response" end
     return content
 end
 
-if not http then
+if not http and not OFFLINE then
     resetTerminal()
     error("BasaltOS Installer requires the HTTP API.", 0)
 end
@@ -61,7 +95,15 @@ term.setTextColor(colors.lightBlue)
 print("Loading BasaltOS Installer...")
 term.setTextColor(colors.white)
 
-local basaltSource, basaltError = download(BASALT_URL)
+-- An offline location may bring the user interface library along.
+local basaltSource, basaltError
+if OFFLINE then basaltSource = download(RAW_BASE .. "basalt.min.lua") end
+if not basaltSource then
+    if not http then
+        error("No basalt.min.lua in " .. RAW_BASE .. " and no HTTP API to fetch it.", 0)
+    end
+    basaltSource, basaltError = download(BASALT_URL)
+end
 if not basaltSource then
     error("Could not download Basalt: " .. tostring(basaltError), 0)
 end
@@ -145,13 +187,13 @@ local logo = brandPanel:addCanvas({
 
 brandPanel:addLabel({
     x=4, y=17, width=11, height=1,
-    autoSize=false, text="BASALT 2.5",
+    text="BASALT 2.5",
     foreground=palette.text,
 })
 
 brandPanel:addLabel({
     x=5, y=18, width=9, height=1,
-    autoSize=false, text="INSTALLER",
+    text="INSTALLER",
     foreground=palette.muted,
 })
 
@@ -162,7 +204,7 @@ local brand = main:addBigFont({
 
 local tagline = main:addLabel({
     x=24, y=5, width="{parent.width - 21}", height=1,
-    autoSize=false, text="A playful OS for CC:Tweaked",
+    text="A playful OS for CC:Tweaked",
     foreground=palette.muted,
 })
 
@@ -173,25 +215,25 @@ local statusCard = main:addFrame({
 
 local phase = statusCard:addLabel({
     x=2, y=2, width=8, height=1,
-    autoSize=false, text=" READY",
+    text=" READY",
     foreground=palette.bg, background=palette.lava,
 })
 
 local title = statusCard:addLabel({
     x=11, y=2, width="{parent.width - 12}", height=1,
-    autoSize=false, text="Ready to install",
+    text="Ready to install",
     foreground=palette.text,
 })
 
 local status = statusCard:addLabel({
     x=2, y=4, width="{parent.width - 4}", height=2,
-    autoSize=false, foreground=palette.text,
+    foreground=palette.text,
 })
 status:setText("Target: computer root (/)")
 
 local detail = statusCard:addLabel({
     x=2, y=6, width="{parent.width - 4}", height=1,
-    autoSize=false, foreground=palette.muted,
+    foreground=palette.muted,
 })
 detail:setText("User data stays untouched.")
 
@@ -205,7 +247,7 @@ local progress = statusCard:addProgressBar({
 
 main:addLabel({
     x=20, y=17, width="{parent.width - 21}", height=1,
-    autoSize=false, text="Staged install + safe rollback",
+    text="Staged install + safe rollback",
     foreground=palette.muted,
 })
 
@@ -263,7 +305,7 @@ end
 
 local function writeFile(path, content)
     ensureParent(path)
-    local handle, reason = fs.open(path, "w")
+    local handle, reason = fs.open(path, "wb")
     if not handle then
         error("Could not write " .. path .. ": " .. tostring(reason), 0)
     end
@@ -290,7 +332,15 @@ local function fetchFileList()
     setStatus("Reading the install manifest...", palette.text)
     setDetail("Requesting the versioned BasaltOS file list.")
 
-    local body, reason = download(MANIFEST_URL)
+    -- The packed image comes first; a branch without one has the plain files.
+    local base, packed, body, reason = RAW_BASE, false, nil, nil
+    if not forceSource then
+        body = download(PACKED_BASE .. "install-manifest.txt")
+        if body then base, packed = PACKED_BASE, true end
+    end
+    if not body then
+        body, reason = download(RAW_BASE .. "install-manifest.txt")
+    end
     if not body then
         error("Could not download the install manifest: "
             .. tostring(reason), 0)
@@ -340,7 +390,7 @@ local function fetchFileList()
     if #files == 0 then
         error("The install manifest contains no BasaltOS files.", 0)
     end
-    return files, totalBytes
+    return files, totalBytes, base, packed
 end
 
 local function verifySpace(totalBytes)
@@ -396,7 +446,7 @@ local function backupStartup(stagedStartup)
     fs.copy("startup.lua", backup)
 end
 
-local function installFiles(files)
+local function installFiles(files, base, packed)
     stagePath = makeStagePath()
     local newRoot = fs.combine(stagePath, "new")
     local backupRoot = fs.combine(stagePath, "backup")
@@ -411,7 +461,7 @@ local function installFiles(files)
         setStatus(("Downloading file %d of %d..."):format(index, #files))
         setDetail(file.target)
 
-        local content, reason = download(RAW_BASE .. file.source)
+        local content, reason = download(base .. file.source)
         if not content then
             error("Could not download " .. file.target .. ": "
                 .. tostring(reason), 0)
@@ -457,6 +507,38 @@ local function installFiles(files)
             local percent = 88 + math.floor(index / #files * 12)
             progress:setProgress(math.min(100, percent))
             setDetail(file.target)
+        end
+
+        if packed then
+            -- A packed image keeps its code inside packages, and a real file
+            -- wins over a packaged one. Files left by an earlier, unpacked
+            -- installation would keep running in place of the new system, so
+            -- everything under /system that the image does not list is moved
+            -- out of the way (and put back if applying fails).
+            local listed = {}
+            for _, file in ipairs(files) do listed[file.target] = true end
+            local function sweep(directory)
+                for _, name in ipairs(fs.list(directory)) do
+                    local path = fs.combine(directory, name)
+                    if fs.isDir(path) then
+                        sweep(path)
+                        if #fs.list(path) == 0 then fs.delete(path) end
+                    elseif not listed[path] and not isRuntimePath(path) then
+                        local backup = fs.combine(backupRoot, path)
+                        applied[#applied + 1] = {
+                            target=fs.combine("/", path),
+                            backup=backup,
+                            hadOriginal=true,
+                        }
+                        ensureParent(backup)
+                        fs.move(path, backup)
+                    end
+                end
+            end
+            if fs.isDir("system") then
+                setDetail("Removing files of the previous installation")
+                sweep("system")
+            end
         end
     end)
 
@@ -524,11 +606,12 @@ local function performInstallation()
     progress:setProgress(0)
 
     local ok, reason = pcall(function()
-        local files, totalBytes = fetchFileList()
+        local files, totalBytes, base, packed = fetchFileList()
         verifySpace(totalBytes)
-        setDetail(("%d files, approximately %d KB")
-            :format(#files, math.ceil(totalBytes / 1024)))
-        installFiles(files)
+        setDetail(("%s: %d files, about %d KB")
+            :format(packed and "Packed image" or "Plain files",
+                #files, math.ceil(totalBytes / 1024)))
+        installFiles(files, base, packed)
     end)
     finishAttempt(ok, reason)
 end

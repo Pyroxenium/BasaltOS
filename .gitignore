@@ -2,6 +2,9 @@ system.log
 obsidian.log
 basalt.log
 
+# Output of tools/build.ps1 and tools/test.ps1
+build/
+
 # BasaltOS runtime state
 os/system/config.dat
 os/system/logs/

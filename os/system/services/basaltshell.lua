@@ -53,15 +53,6 @@ function api.public.execute(command_line, env)
         return builtins[cmd](args, env)
     end
     
-    -- Check for app in registry
-    local app_service = service.getService("app")
-    if app_service then
-        local app = app_service.getApp(cmd)
-        if app then
-            return api.private.launchApp(app, args, env)
-        end
-    end
-    
     -- Try to execute as Lua file
     local file_path = api.private.resolveCommand(cmd)
     if file_path and fs.exists(file_path) then
@@ -142,21 +133,6 @@ function api.private.resolveCommand(cmd)
     end
     
     return nil
-end
-
--- Launch an app from registry
-function api.private.launchApp(app, args, env)
-    local process_service = service.getService("process")
-    if not process_service then
-        return false, "Process service not available"
-    end
-    
-    local pid, err = process_service.startProgram(app.id, args)
-    if pid then
-        return true, "Launched " .. app.name .. " (PID: " .. pid .. ")"
-    else
-        return false, err or ("Failed to launch " .. app.name)
-    end
 end
 
 -- Execute a Lua file

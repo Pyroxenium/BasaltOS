@@ -12,6 +12,7 @@ local api = api_factory.new()
 local DEFAULT_CATALOG_URL =
     "https://raw.githubusercontent.com/Pyroxenium/BasaltOSStore/main/catalog.json"
 local DEFAULT_CACHE_SECONDS = 300
+local PACKAGE_FILE = "app.bpk"
 
 local current_catalog
 local current_user
@@ -276,7 +277,35 @@ local function requestAppFile(url)
     return body
 end
 
+-- A packaged app ships its code and assets inside app.bpk, which stays
+-- compressed on disk. It is opened once here, so an incomplete or damaged
+-- download fails the installation instead of the first start of the app.
+local function inspectStagedPackage(app, staging_path)
+    local declared = false
+    for _, filename in ipairs(app.source.files) do
+        if filename == PACKAGE_FILE then declared = true break end
+    end
+    if not declared then return nil end
+
+    local runtime = _G.bpk
+    if not runtime or not runtime.inspect then
+        return nil, "This BasaltOS installation cannot run packaged apps"
+    end
+    local package, inspect_error = runtime.inspect(
+        fs.combine(staging_path, PACKAGE_FILE), true)
+    if not package then
+        return nil, "Downloaded app package is damaged: " .. tostring(inspect_error)
+    end
+    if package.root ~= "." then
+        return nil, "App package may only contain files of its own app"
+    end
+    return package
+end
+
 local function validateStagedManifest(app, staging_path)
+    local package, package_error = inspectStagedPackage(app, staging_path)
+    if package_error then return nil, package_error end
+
     local manifest_path = fs.combine(staging_path, "app.json")
     local body = readFile(manifest_path)
     if not body then return nil, "Downloaded app.json is missing" end
@@ -289,7 +318,9 @@ local function validateStagedManifest(app, staging_path)
     end
     local executable = tostring(manifest.executable or "")
     if executable == "" then return nil, "app.json declares no executable" end
-    if executable:sub(1, 5) ~= "/rom/" then
+    local packaged = package ~= nil
+        and package.files[fs.combine("", executable)] ~= nil
+    if executable:sub(1, 5) ~= "/rom/" and not packaged then
         local _, declared_error = catalog_model.fileUrl(app, executable)
         if declared_error then
             return nil, "Executable is not declared in source.files"

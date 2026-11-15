@@ -1,0 +1,22 @@
+{
+  "id": "calendar",
+  "name": "Calendar",
+  "version": "0.1.0",
+  "description": "Offline monthly calendar with local day notes",
+  "author": "BasaltOS",
+  "category": "utilities",
+  "executable": "main.lua",
+  "icons": {
+    "main": "icon.bimg",
+    "taskbar": "taskbar.bimg"
+  },
+  "singleton": true,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 49,
+    "default_height": 15,
+    "min_width": 42,
+    "min_height": 14
+  }
+}

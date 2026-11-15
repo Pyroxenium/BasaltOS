@@ -1,0 +1,14 @@
+{
+  "id": "shell",
+  "name": "Shell",
+  "version": "1.0.0",
+  "executable": "/rom/programs/shell.lua",
+  "category": "utilities",
+  "author": "ComputerCraft",
+  "description": "ComputerCraft's command line interface",
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "auto_close": false
+  }
+}

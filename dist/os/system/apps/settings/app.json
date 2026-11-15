@@ -1,0 +1,16 @@
+{
+    "id": "settings",
+    "name": "Settings",
+    "version": "1.0.0",
+    "executable": "main.lua",
+    "icon": "icon.bimg",
+    "category": "system",
+    "description": "System settings configuration",
+    "singleton": true,
+    "window": {
+        "fullscreen": false,
+        "resizable": true,
+        "default_width": 45,
+        "default_height": 17
+    }
+}

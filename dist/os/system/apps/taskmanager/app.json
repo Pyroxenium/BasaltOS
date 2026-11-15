@@ -1,0 +1,22 @@
+{
+  "id": "taskmanager",
+  "name": "Task Manager",
+  "version": "1.0.0",
+  "description": "Inspect, pause, focus and end BasaltOS processes",
+  "author": "BasaltOS",
+  "category": "system",
+  "executable": "main.lua",
+  "icons": {
+    "main": "icon.bimg",
+    "taskbar": "taskbar.bimg"
+  },
+  "singleton": true,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 54,
+    "default_height": 18,
+    "min_width": 46,
+    "min_height": 14
+  }
+}

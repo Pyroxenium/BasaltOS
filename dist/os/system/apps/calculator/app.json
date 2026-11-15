@@ -1,0 +1,22 @@
+{
+  "id": "calculator",
+  "name": "Calculator",
+  "version": "0.1.0",
+  "description": "A compact offline calculator for BasaltOS",
+  "author": "BasaltOS",
+  "category": "utilities",
+  "executable": "main.lua",
+  "icons": {
+    "main": "icon.bimg",
+    "taskbar": "taskbar.bimg"
+  },
+  "singleton": true,
+  "window": {
+    "fullscreen": false,
+    "resizable": true,
+    "default_width": 32,
+    "default_height": 15,
+    "min_width": 28,
+    "min_height": 14
+  }
+}
